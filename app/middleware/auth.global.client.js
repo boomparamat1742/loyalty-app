@@ -1,27 +1,14 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  const publicPages = ["/", "/auth/login", "/auth/register"]
-  if (publicPages.includes(to.path)) return
+  const auth = useAuthStore()
 
-  const supabase = useSupabase()
+  const publicPaths = ["/", "/auth/login", "/auth/register"]
+  if (publicPaths.includes(to.path)) return
 
-  const { data: sessionData } = await supabase.auth.getSession()
-  const user = sessionData.session?.user
+  if (!auth.loaded) await auth.load()
 
-  if (!user) {
-    return navigateTo("/auth/login")
-  }
+  if (!auth.user) return navigateTo("/auth/login")
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  if (!profile) {
-    return navigateTo("/auth/login")
-  }
-
-  if (to.path.startsWith("/admin") && profile.role !== "admin") {
+  if (to.path.startsWith("/admin") && auth.profile?.role !== "admin") {
     return navigateTo("/customer")
   }
 })

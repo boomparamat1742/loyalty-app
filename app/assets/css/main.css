@@ -1,0 +1,89 @@
+/* ===== Home Page ===== */
+
+.home-wrap {
+  min-height: 100vh;
+  background: radial-gradient(1200px 600px at 20% 0%, #eaf0ff 0%, transparent 60%),
+              radial-gradient(900px 500px at 90% 10%, #e7fff5 0%, transparent 55%),
+              #f5f6fb;
+}
+
+.home-container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+/* Hero */
+.home-hero {
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+.home-hero-inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.home-left {
+  min-width: 260px;
+}
+
+.home-title {
+  margin: 0;
+  font-weight: 900;
+}
+
+.home-subtitle {
+  font-size: 16px;
+}
+
+.home-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.home-status {
+  margin-top: 14px;
+}
+
+/* Right side */
+.home-right {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.home-mini-card {
+  width: 260px;
+  border-radius: 16px !important;
+}
+
+/* Bottom */
+.home-grid {
+  margin-top: 12px;
+}
+
+.home-info-card {
+  border-radius: 16px !important;
+}
+
+.home-info-action {
+  margin-top: 12px;
+}
+
+.home-footer {
+  text-align: center;
+  opacity: .6;
+  margin-top: 18px;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .home-mini-card {
+    width: 100%;
+  }
+}

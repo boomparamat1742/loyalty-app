@@ -3,30 +3,31 @@ import { message } from "ant-design-vue"
 
 const supabase = useSupabase()
 const route = useRoute()
+const auth = useAuthStore()
 
 const selected = computed(() => route.path)
 
-const userEmail = ref("")
-const loadingUser = ref(true)
+const userEmail = computed(() => auth.profile?.email || auth.user?.email || "")
+const loadingUser = computed(() => !auth.loaded)
 
-const loadUser = async () => {
-  try {
-    loadingUser.value = true
-    const { data } = await supabase.auth.getUser()
-    userEmail.value = data?.user?.email || ""
-  } finally {
-    loadingUser.value = false
-  }
-}
+onMounted(async () => {
+  // ✅ บังคับโหลด session + profile ก่อน
+  if (!auth.loaded) await auth.load()
 
-onMounted(loadUser)
+  // ✅ ถ้าไม่ login -> ไป login
+  if (!auth.user) return navigateTo("/auth/login")
+
+  // ✅ ถ้าไม่ใช่ admin -> ไป customer
+  if (auth.profile?.role !== "admin") return navigateTo("/customer")
+})
 
 const logout = async () => {
-  await supabase.auth.signOut()
+  await auth.logout()
   message.success("ออกจากระบบแล้ว")
   navigateTo("/auth/login")
 }
 </script>
+
 
 <template>
   <a-layout style="min-height: 100vh">
