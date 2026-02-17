@@ -6,16 +6,18 @@ definePageMeta({ layout: "admin" });
 
 const supabase = useSupabase();
 
-const tab = ref("daily"); // daily | monthly | yearly
+const tab = ref("daily"); // daily | monthly | yearly | custom
 const loading = ref(false);
 const rows = ref([]);
+
+// ✅ custom range state (ค่าเริ่มต้น = วันนี้)
+const customRange = ref([dayjs().startOf("day"), dayjs().endOf("day")]);
 
 // ช่วงเวลา filter (ไม่ group)
 const range = computed(() => {
   const now = dayjs();
 
   if (tab.value === "daily") {
-    // วันนี้
     return {
       from: now.startOf("day").toISOString(),
       to: now.endOf("day").toISOString(),
@@ -24,7 +26,6 @@ const range = computed(() => {
   }
 
   if (tab.value === "monthly") {
-    // เดือนนี้
     return {
       from: now.startOf("month").toISOString(),
       to: now.endOf("month").toISOString(),
@@ -32,11 +33,23 @@ const range = computed(() => {
     };
   }
 
-  // ปีนี้
+  if (tab.value === "yearly") {
+    return {
+      from: now.startOf("year").toISOString(),
+      to: now.endOf("year").toISOString(),
+      label: now.format("YYYY"),
+    };
+  }
+
+  // ✅ custom (ระหว่างวันที่)
+  const [start, end] = customRange.value || [];
   return {
-    from: now.startOf("year").toISOString(),
-    to: now.endOf("year").toISOString(),
-    label: now.format("YYYY"),
+    from: (start || now).startOf("day").toISOString(),
+    to: (end || now).endOf("day").toISOString(),
+    label:
+      start && end
+        ? `${start.format("DD/MM/YYYY")} - ${end.format("DD/MM/YYYY")}`
+        : "-",
   };
 });
 
@@ -46,7 +59,6 @@ const fetchData = async () => {
   try {
     loading.value = true;
 
-    // ✅ ดึงจาก sales แบบไม่ group
     const { data, error } = await supabase
       .from("sales")
       .select("id, amount, points_earned, note, created_at")
@@ -65,15 +77,21 @@ const fetchData = async () => {
   }
 };
 
+// ✅ เปลี่ยน tab แล้วดึงใหม่
 watch(tab, fetchData, { immediate: true });
+
+// ✅ เปลี่ยน customRange แล้วดึงใหม่ เฉพาะตอนเลือก custom
+watch(customRange, () => {
+  if (tab.value === "custom") fetchData();
+});
 
 // KPI จากรายการจริง (ไม่ group)
 const kpiAmount = computed(() =>
-  rows.value.reduce((s, r) => s + Number(r.amount || 0), 0)
+  rows.value.reduce((s, r) => s + Number(r.amount || 0), 0),
 );
 const kpiOrders = computed(() => rows.value.length);
 const kpiPoints = computed(() =>
-  rows.value.reduce((s, r) => s + Number(r.points_earned || 0), 0)
+  rows.value.reduce((s, r) => s + Number(r.points_earned || 0), 0),
 );
 
 // กราฟจากรายการจริง (X=เวลา, Y=ยอดขาย)
@@ -90,6 +108,13 @@ const chartOption = computed(() => {
     series: [{ type: "line", data: y, smooth: true }],
   };
 });
+
+// ✅ helper: สลับไป custom เมื่อเลือกช่วง
+const onPickRange = (vals) => {
+  // vals = [dayjs, dayjs] หรือ null
+  if (!vals || !vals[0] || !vals[1]) return;
+  tab.value = "custom";
+};
 </script>
 
 <template>
@@ -102,9 +127,14 @@ const chartOption = computed(() => {
         gap: 12px;
       "
     >
-      <a-typography-title :level="3" style="margin: 0">ยอดขาย</a-typography-title>
+      <a-typography-title :level="3" style="margin: 0"
+        >ยอดขาย</a-typography-title
+      >
 
       <a-space>
+        <NuxtLink to="/admin">
+          <a-button type="primary">กลับเมนูหลัก</a-button>
+        </NuxtLink>
         <a-button @click="fetchData" :loading="loading">Refresh</a-button>
       </a-space>
     </div>
@@ -116,8 +146,20 @@ const chartOption = computed(() => {
           { label: 'รายวัน (วันนี้)', value: 'daily' },
           { label: 'รายเดือน (เดือนนี้)', value: 'monthly' },
           { label: 'รายปี (ปีนี้)', value: 'yearly' },
+          { label: 'ระหว่างวันที่', value: 'custom' },
         ]"
       />
+
+      <!-- ✅ ตัวเลือกช่วงวันที่ -->
+      <a-space>
+        <a-range-picker
+          v-model:value="customRange"
+          format="DD/MM/YYYY"
+          @change="onPickRange"
+          :allowClear="false"
+        />
+      </a-space>
+
       <NuxtLink to="/admin/sales/new">
         <a-button type="primary">+ เพิ่มยอดขาย</a-button>
       </NuxtLink>
@@ -163,12 +205,12 @@ const chartOption = computed(() => {
       <VChart :option="chartOption" style="height: 360px" />
     </a-card>
 
-    <a-card style="border-radius: 16px" :loading="loading" title="รายการยอดขาย (ไม่รวมกลุ่ม)">
-      <a-table
-        :dataSource="rows"
-        rowKey="id"
-        :pagination="{ pageSize: 10 }"
-      >
+    <a-card
+      style="border-radius: 16px"
+      :loading="loading"
+      title="รายการยอดขาย (ไม่รวมกลุ่ม)"
+    >
+      <a-table :dataSource="rows" rowKey="id" :pagination="{ pageSize: 10 }">
         <a-table-column
           title="เวลา"
           :customRender="({ record }) => fmtDateTime(record.created_at)"
