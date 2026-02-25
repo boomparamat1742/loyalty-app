@@ -93,7 +93,7 @@ const save = async () => {
     form.amount = null;
 
     // กลับ dashboard
-    navigateTo("/customer");
+    // navigateTo("/customer");
   } catch (e) {
     console.error(e);
     message.error(e?.message || "บันทึกไม่สำเร็จ");
@@ -105,370 +105,367 @@ const save = async () => {
 
 <template>
   <div class="purchase-wrap">
+    <div class="neon-orb orb-purple"></div>
+    <div class="neon-orb orb-blue"></div>
+
     <div class="purchase-shell">
-      <!-- Left panel -->
       <section class="purchase-left">
-        <div class="left-bubbles">
-          <span class="bubble b1" />
-          <span class="bubble b2" />
-          <span class="bubble b3" />
-          <span class="bubble b4" />
-        </div>
-
+        <div class="glass-overlay"></div>
         <div class="left-content">
-          <div class="left-badge">Loyalty</div>
+          <div class="left-badge">
+            <span class="pulse-dot"></span>
+            SYSTEM ONLINE
+          </div>
 
-          <h1 class="left-title">Welcome</h1>
+          <h2 class="left-title">
+            สะสมแต้ม <br /><span class="text-highlight">รายการซื้อ</span>
+          </h2>
           <p class="left-subtitle">
-            กรอกข้อมูลการซื้อเพื่อรับแต้มสะสม
-            <br />
-            100 บาท = 10 แต้ม
+            ทุกการใช้จ่ายมีความหมาย <br />
+            <span class="rate-tag">100 THB = 10 PTS</span>
           </p>
 
           <div class="left-kpi">
-            <div class="kpi-card">
-              <div class="kpi-label">แต้มที่จะได้รับ</div>
-              <div class="kpi-value">
-                {{ pointsEarned.toLocaleString() }}
-                <span class="kpi-unit">แต้ม</span>
+            <div class="kpi-card-advanced">
+              <div class="kpi-header">
+                <ThunderboltFilled class="icon-energy" />
+                <span>ESTIMATED POINTS</span>
+              </div>
+              <div class="kpi-main">
+                <span class="kpi-value-big">{{
+                  pointsEarned.toLocaleString()
+                }}</span>
+                <span class="kpi-suffix">POINTS</span>
+              </div>
+              <div class="kpi-progress-bar">
+                <div
+                  class="progress-fill"
+                  :style="{ width: (pointsEarned % 100) + '%' }"
+                ></div>
               </div>
             </div>
 
-            <div class="kpi-hint">
-              ระบบจะบันทึกลงตารางยอดขาย และเพิ่มแต้มให้บัญชีคุณอัตโนมัติ
+            <div class="security-note">
+              <SafetyCertificateFilled />
+              บันทึกข้อมูลผ่านระบบเข้ารหัสความปลอดภัยสูง
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Right form -->
       <section class="purchase-right">
-        <a-card class="purchase-card" :bordered="false">
+        <div class="form-container">
           <div class="purchase-head">
-            <a-typography-title :level="3" class="purchase-title">
-              กรอกข้อมูลการซื้อ
-            </a-typography-title>
-            <div class="purchase-desc">
-              โปรดตรวจสอบอีเมลให้ตรงกับที่สมัครไว้
-            </div>
+            <h2 class="form-title">Transaction Details</h2>
+            <p class="form-subtitle">กรุณาระบุรายละเอียดสินค้าและราคา</p>
           </div>
 
-          <a-form layout="vertical" :model="form" @finish="save">
-            <a-form-item label="Email" required>
+          <a-form
+            layout="vertical"
+            :model="form"
+            @finish="save"
+            class="custom-form"
+          >
+            <a-form-item label="บัญชีผู้ใช้งาน">
               <a-input
                 v-model:value="form.email"
                 placeholder="email@example.com"
                 readonly
-              />
+                class="input-readonly"
+              >
+                <template #prefix
+                  ><UserOutlined style="color: #722ed1"
+                /></template>
+              </a-input>
             </a-form-item>
 
-            <a-form-item label="สินค้าที่ซื้อ" required>
+            <a-form-item label="ชื่อสินค้า / รุ่นโทรศัพท์" required>
               <a-input
                 v-model:value="form.item_name"
-                placeholder="เช่น เคส iPhone / ฟิล์มกันรอย"
+                placeholder="เช่น เคส iPhone 15 Pro Max หรือ ฟิล์ม"
+                class="input-premium"
               />
             </a-form-item>
 
-            <a-form-item label="ราคา (บาท)" required>
+            <a-form-item label="ราคาชำระจริง (บาท)" required>
               <a-input-number
                 v-model:value="form.amount"
-                style="width: 100%"
                 :min="1"
+                class="input-number-premium"
+                :formatter="
+                  (value) => `฿ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                "
+                :parser="(value) => value.replace(/\฿\s?|(,*)/g, '')"
               />
             </a-form-item>
 
-            <a-alert
-              class="purchase-alert"
-              type="info"
-              show-icon
-              :message="`แต้มที่จะได้รับ: ${pointsEarned.toLocaleString()} แต้ม (100 บาท = 10 แต้ม)`"
-            />
+            <div class="point-preview-box">
+              <div class="preview-label">คุณจะได้รับแต้มสะสม</div>
+              <div class="preview-value">
+                + {{ pointsEarned.toLocaleString() }} <span>PTS</span>
+              </div>
+            </div>
 
             <div class="purchase-actions">
-              <a-button class="btn-ghost" @click="navigateTo('/customer')">
-                ย้อนกลับ
+              <a-button class="btn-back" @click="navigateTo('/customer')">
+                ยกเลิก
               </a-button>
 
               <a-button
-                class="btn-primary"
+                class="btn-submit-glow"
                 type="primary"
                 html-type="submit"
                 :loading="loading"
               >
-                บันทึก
+                ยืนยันรายการซื้อ
               </a-button>
             </div>
           </a-form>
-        </a-card>
+        </div>
       </section>
     </div>
   </div>
 </template>
 <style scoped>
-/* Page background */
 .purchase-wrap {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 28px 16px;
-  background: #f5f8ff;
+  padding: 40px 20px;
+  background: #020617; /* พื้นหลังเข้มแบบพรีเมียม */
+  position: relative;
+  overflow: hidden;
 }
 
-/* Shell */
+/* Neon Background Decor */
+.neon-orb {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.15;
+  z-index: 0;
+}
+.orb-purple {
+  background: #722ed1;
+  top: -100px;
+  left: -100px;
+}
+.orb-blue {
+  background: #1890ff;
+  bottom: -100px;
+  right: -100px;
+}
+
 .purchase-shell {
   width: 100%;
-  max-width: 1100px;
-  min-height: 560px;
-  border-radius: 22px;
-  overflow: hidden;
+  max-width: 1050px;
+  min-height: 600px;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 1.05fr 1fr;
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.12);
+  grid-template-columns: 1fr 1.1fr;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
-/* Left panel */
+/* Left Panel */
 .purchase-left {
   position: relative;
-  padding: 34px;
-  background:
-    radial-gradient(
-      900px 520px at 20% 0%,
-      rgba(255, 255, 255, 0.28),
-      transparent 55%
-    ),
-    linear-gradient(135deg, #2f7bff 0%, #22c1ff 100%);
+  padding: 60px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #722ed1 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+}
+
+.text-highlight {
+  color: #00d2ff;
+  text-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+}
+
+.left-badge {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 16px;
+  border-radius: 100px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: #00ff88;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00ff88;
+  animation: pulse 2s infinite;
+}
+
+.left-title {
+  font-size: 48px;
+  font-weight: 900;
+  margin: 24px 0;
+  line-height: 1;
   color: #fff;
 }
 
-.left-content {
-  position: relative;
-  z-index: 2;
-  height: 100%;
+.rate-tag {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #00d2ff;
+}
+
+.kpi-card-advanced {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 30px;
+}
+
+.kpi-header {
+  font-size: 12px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.icon-energy {
+  color: #fadb14;
+}
+
+.kpi-value-big {
+  font-size: 56px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.kpi-suffix {
+  font-size: 14px;
+  margin-left: 10px;
+  color: #94a3b8;
+}
+
+/* Right Panel */
+.purchase-right {
+  padding: 60px;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-.left-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  margin-bottom: 18px;
-}
-
-.left-title {
-  margin: 0;
-  font-size: 44px;
-  font-weight: 950;
-  letter-spacing: -0.6px;
-  text-shadow: 0 14px 34px rgba(0, 0, 0, 0.18);
-}
-
-.left-subtitle {
-  margin: 10px 0 0;
-  opacity: 0.92;
-  font-size: 15px;
-  line-height: 1.65;
-}
-
-.left-kpi {
-  margin-top: 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.kpi-card {
-  border-radius: 16px;
-  padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(8px);
-}
-
-.kpi-label {
-  opacity: 0.9;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.kpi-value {
-  margin-top: 6px;
-  font-weight: 950;
+.form-title {
   font-size: 28px;
-  letter-spacing: -0.3px;
-}
-
-.kpi-unit {
-  font-size: 13px;
   font-weight: 800;
-  opacity: 0.9;
-  margin-left: 8px;
+  margin: 0;
+  color: #0f172a;
 }
 
-.kpi-hint {
-  font-size: 13px;
-  opacity: 0.88;
-  line-height: 1.6;
+.form-subtitle {
+  color: #64748b;
+  margin-bottom: 32px;
 }
 
-/* Bubble decorations */
-.left-bubbles {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-.bubble {
-  position: absolute;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  filter: blur(0px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
-}
-
-.b1 {
-  width: 86px;
-  height: 86px;
-  top: 28px;
-  left: 26px;
-  opacity: 0.55;
-}
-
-.b2 {
-  width: 140px;
-  height: 140px;
-  top: 90px;
-  right: -50px;
-  opacity: 0.35;
-}
-
-.b3 {
-  width: 110px;
-  height: 110px;
-  bottom: 64px;
-  left: 64px;
-  opacity: 0.35;
-}
-
-.b4 {
-  width: 64px;
-  height: 64px;
-  bottom: 34px;
-  right: 70px;
-  opacity: 0.45;
-}
-
-/* Right panel */
-.purchase-right {
-  display: grid;
-  place-items: center;
-  padding: 28px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
-}
-
-.purchase-card {
-  width: 100%;
-  max-width: 460px;
-  border-radius: 18px !important;
-  border: 1px solid rgba(15, 23, 42, 0.06) !important;
-  box-shadow: 0 18px 44px rgba(2, 6, 23, 0.08);
-}
-
-.purchase-head {
-  margin-bottom: 10px;
-}
-
-.purchase-title {
-  margin: 0 !important;
-  font-weight: 950 !important;
-  letter-spacing: -0.3px;
-  color: #0f172a !important;
-}
-
-.purchase-desc {
-  margin-top: 6px;
-  font-size: 13px;
-  color: rgba(15, 23, 42, 0.62);
-}
-
-/* Inputs */
-:deep(.ant-form-item-label > label) {
-  font-weight: 800;
-}
-
-:deep(.ant-input),
-:deep(.ant-input-affix-wrapper),
-:deep(.ant-input-number) {
+.input-premium,
+.input-readonly {
+  height: 50px !important;
   border-radius: 12px !important;
+  font-size: 16px !important;
+  border: 1px solid #e2e8f0 !important;
 }
 
-:deep(.ant-input) {
-  padding: 10px 12px !important;
+.input-number-premium {
+  width: 100% !important;
+  height: 50px !important;
+  border-radius: 12px !important;
+  display: flex;
+  align-items: center;
+  font-size: 18px !important;
+  font-weight: 700 !important;
 }
 
-:deep(.ant-input-affix-wrapper) {
-  padding: 6px 10px !important;
+.point-preview-box {
+  background: #f8fafc;
+  border: 2px dashed #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  margin: 24px 0;
 }
 
-:deep(.ant-input-number) {
-  width: 100%;
-  padding: 6px 10px !important;
+.preview-value {
+  font-size: 32px;
+  font-weight: 900;
+  color: #722ed1;
 }
 
-/* Alert */
-.purchase-alert {
-  margin: 6px 0 14px;
-  border-radius: 14px;
+.preview-value span {
+  font-size: 14px;
+  color: #64748b;
 }
 
-/* Actions */
+/* Buttons */
+.btn-submit-glow {
+  height: 54px !important;
+  border-radius: 16px !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  background: linear-gradient(90deg, #722ed1, #1890ff) !important;
+  border: none !important;
+  box-shadow: 0 10px 25px rgba(114, 46, 209, 0.3) !important;
+  flex: 1;
+}
+
+.btn-back {
+  height: 54px !important;
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+  width: 100px;
+}
+
 .purchase-actions {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 6px;
+  gap: 16px;
 }
 
-.btn-ghost {
-  border-radius: 12px;
-  height: 42px;
-  padding: 0 16px;
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.btn-primary {
-  border-radius: 12px;
-  height: 42px;
-  padding: 0 18px;
-  font-weight: 900;
-  box-shadow: 0 12px 26px rgba(47, 123, 255, 0.28);
-}
-
-/* Responsive */
 @media (max-width: 900px) {
   .purchase-shell {
     grid-template-columns: 1fr;
-    min-height: unset;
   }
   .purchase-left {
-    padding: 26px 22px;
-  }
+    display: none;
+  } /* ซ่อนพาเนลซ้ายในมือถือเพื่อความคล่องตัว */
   .purchase-right {
-    padding: 18px;
+    padding: 40px 24px;
   }
-}
-
-/* กัน pointer-events เพี้ยน */
-.purchase-wrap * {
-  pointer-events: auto;
 }
 </style>

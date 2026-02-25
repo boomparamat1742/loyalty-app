@@ -37,99 +37,103 @@ const logout = async () => {
 
 <template>
   <div class="admin-page">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
     <div class="admin-shell">
-      <!-- Top bar -->
       <div class="topbar">
         <div class="title-wrap">
-          <a-typography-title :level="3" class="page-title" style="margin: 0">
-            Admin Dashboard
+          <div class="admin-label">
+            <span class="dot"></span> SYSTEM OVERVIEW
+          </div>
+          <a-typography-title :level="2" class="page-title">
+            Admin <span class="text-gradient">Control Panel</span>
           </a-typography-title>
-          <div class="subtitle">ภาพรวมระบบสำหรับผู้ดูแล</div>
         </div>
 
-        <a-button class="btn-logout" danger @click="logout">Logout</a-button>
+        <a-space size="middle">
+          <div class="server-status">
+            <span class="status-text">Network: Online</span>
+            <div class="pulse-green"></div>
+          </div>
+          <a-button class="btn-logout-luxury" @click="logout">
+            <template #icon><LogoutOutlined /></template> Logout
+          </a-button>
+        </a-space>
       </div>
 
-      <!-- Welcome / status -->
-      <a-card class="glass" :bordered="false" :loading="loading">
-        <div class="welcome-row">
-          <div class="welcome-left">
-            <div class="badge">ADMIN</div>
-
-            <a-alert
-              v-if="me"
-              show-icon
-              type="success"
-              :message="`Welcome ${me.email} (${me.role})`"
-            />
-            <a-alert
-              v-else
-              show-icon
-              type="warning"
-              message="กำลังโหลดข้อมูลผู้ใช้..."
-            />
+      <a-card class="glass-main" :bordered="false">
+        <div class="welcome-container">
+          <div class="welcome-profile">
+            <div class="avatar-glow">
+              <UserOutlined />
+            </div>
+            <div class="profile-details">
+              <div v-if="me" class="user-greeting">
+                ยินดีต้อนรับคุณ, <span class="user-email">{{ me.email }}</span>
+              </div>
+              <a-skeleton-input v-else active size="small" />
+              <div class="role-badge">{{ me?.role || "Fetching..." }}</div>
+            </div>
           </div>
 
-          <div class="welcome-right">
-            <div class="stat">
-              <div class="stat-label">สถานะ</div>
-              <div class="stat-value" :class="{ ok: !!me }">
-                {{ me ? "พร้อมใช้งาน" : "กำลังโหลด..." }}
-              </div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="s-label">SYSTEM STATUS</span>
+              <span class="s-value status-active">ACTIVE</span>
             </div>
-            <div class="divider" />
-            <div class="stat">
-              <div class="stat-label">สิทธิ์</div>
-              <div class="stat-value">{{ me?.role || "-" }}</div>
+            <div class="v-divider"></div>
+            <div class="stat-item">
+              <span class="s-label">DATABASE</span>
+              <span class="s-value">CONNECTED</span>
             </div>
           </div>
         </div>
       </a-card>
 
-      <!-- Quick cards -->
-      <a-row :gutter="[14, 14]" style="margin-top: 14px">
+      <a-row :gutter="[20, 20]" style="margin-top: 24px">
         <a-col :xs="24" :md="8">
           <NuxtLink class="card-link" to="/admin/sales">
-            <a-card hoverable class="nav-card nav-blue" :bordered="false">
-              <div class="nav-head">
-                <div class="nav-icon">฿</div>
-                <div>
-                  <div class="nav-title">ยอดขาย</div>
-                  <div class="nav-desc">รายวัน / เดือน / ปี + กราฟ</div>
+            <div class="nav-card-luxury blue-theme">
+              <div class="card-inner">
+                <div class="icon-box"><LineChartOutlined /></div>
+                <div class="card-info">
+                  <h3>ยอดขายรวม</h3>
+                  <p>Daily & Monthly Report</p>
                 </div>
               </div>
-              <div class="nav-foot">ไปที่หน้า ยอดขาย →</div>
-            </a-card>
+              <div class="card-arrow"><ArrowRightOutlined /></div>
+            </div>
           </NuxtLink>
         </a-col>
 
         <a-col :xs="24" :md="8">
           <NuxtLink class="card-link" to="/admin/rewards">
-            <a-card hoverable class="nav-card nav-purple" :bordered="false">
-              <div class="nav-head">
-                <div class="nav-icon">🎁</div>
-                <div>
-                  <div class="nav-title">ของรางวัล</div>
-                  <div class="nav-desc">เพิ่ม/แก้ไขของรางวัลแลกแต้ม</div>
+            <div class="nav-card-luxury purple-theme">
+              <div class="card-inner">
+                <div class="icon-box"><GiftOutlined /></div>
+                <div class="card-info">
+                  <h3>จัดการของรางวัล</h3>
+                  <p>Inventory & Points</p>
                 </div>
               </div>
-              <div class="nav-foot">ไปที่หน้า ของรางวัล →</div>
-            </a-card>
+              <div class="card-arrow"><ArrowRightOutlined /></div>
+            </div>
           </NuxtLink>
         </a-col>
 
         <a-col :xs="24" :md="8">
           <NuxtLink class="card-link" to="/admin/users">
-            <a-card hoverable class="nav-card nav-green" :bordered="false">
-              <div class="nav-head">
-                <div class="nav-icon">👤</div>
-                <div>
-                  <div class="nav-title">ผู้ใช้</div>
-                  <div class="nav-desc">ลูกค้า + เพิ่ม Admin ให้พนักงาน</div>
+            <div class="nav-card-luxury green-theme">
+              <div class="card-inner">
+                <div class="icon-box"><TeamOutlined /></div>
+                <div class="card-info">
+                  <h3>สมาชิกทั้งหมด</h3>
+                  <p>User Management</p>
                 </div>
               </div>
-              <div class="nav-foot">ไปที่หน้า ผู้ใช้ →</div>
-            </a-card>
+              <div class="card-arrow"><ArrowRightOutlined /></div>
+            </div>
           </NuxtLink>
         </a-col>
       </a-row>
@@ -138,217 +142,294 @@ const logout = async () => {
 </template>
 
 <style scoped>
-/* ===== Page background ===== */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap");
+
 .admin-page {
   min-height: 100vh;
-  padding: 24px;
-  background: radial-gradient(
-      1200px 600px at 18% 10%,
-      rgba(59, 130, 246, 0.18),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 500px at 82% 18%,
-      rgba(168, 85, 247, 0.14),
-      transparent 55%
-    ),
-    linear-gradient(180deg, #0b0f14 0%, #0a0d11 100%);
+  padding: 40px 24px;
+  background: #020617; /* Deepest blue */
+  font-family: "Plus Jakarta Sans", sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
-/* container */
+/* Background Blobs */
+.glow-orb {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  z-index: 0;
+  opacity: 0.15;
+}
+.orb-1 {
+  background: #3b82f6;
+  top: -10%;
+  left: -10%;
+}
+.orb-2 {
+  background: #a855f7;
+  bottom: -10%;
+  right: -10%;
+}
+
 .admin-shell {
-  max-width: 1180px;
+  max-width: 1200px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
-/* ===== Topbar ===== */
-.topbar {
+/* Topbar */
+.admin-label {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  background: #3b82f6;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #3b82f6;
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #3b82f6, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
 }
 
 .page-title {
-  color: rgba(255, 255, 255, 0.92);
-  letter-spacing: 0.2px;
+  color: #fff !important;
+  margin: 0 !important;
+  font-weight: 800 !important;
 }
 
-.subtitle {
-  margin-top: 4px;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
-}
-
-.btn-logout {
-  border-radius: 12px;
-  height: 40px;
-}
-
-/* ===== Glass card ===== */
-.glass {
-  border-radius: 18px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.06),
-    rgba(255, 255, 255, 0.03)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-}
-
-/* welcome layout */
-.welcome-row {
+.server-status {
   display: flex;
   align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.status-text {
+  color: #94a3b8;
+  font-size: 12px;
+}
+.pulse-green {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+/* Glass Main Card */
+.glass-main {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 24px !important;
+  margin-top: 24px;
+}
+
+.welcome-container {
+  display: flex;
   justify-content: space-between;
-  gap: 14px;
+  align-items: center;
   flex-wrap: wrap;
+  gap: 20px;
 }
 
-.welcome-left {
-  min-width: 280px;
-  flex: 1;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  height: 26px;
-  padding: 0 10px;
-  margin-bottom: 10px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.6px;
-  color: rgba(255, 255, 255, 0.92);
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.45), rgba(168, 85, 247, 0.35));
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.welcome-right {
+.welcome-profile {
   display: flex;
-  gap: 12px;
   align-items: center;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 20px;
 }
 
-.stat {
-  min-width: 120px;
+.avatar-glow {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #3b82f6, #a855f7);
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
 }
-.stat-label {
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 12px;
-  margin-bottom: 4px;
+
+.user-greeting {
+  color: #94a3b8;
+  font-size: 16px;
 }
-.stat-value {
-  color: rgba(255, 255, 255, 0.92);
+.user-email {
+  color: #fff;
+  font-weight: 700;
+}
+.role-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 800;
+  margin-top: 6px;
+  text-transform: uppercase;
 }
-.stat-value.ok {
-  color: rgba(34, 197, 94, 0.95);
+
+.stats-grid {
+  display: flex;
+  align-items: center;
+  gap: 30px;
 }
-.divider {
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+.s-label {
+  font-size: 10px;
+  color: #64748b;
+  letter-spacing: 1px;
+}
+.s-value {
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+}
+.status-active {
+  color: #22c55e;
+}
+.v-divider {
   width: 1px;
-  height: 34px;
+  height: 40px;
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ===== Nav cards ===== */
-.card-link {
-  display: block;
-  text-decoration: none;
-}
-
-.nav-card {
-  border-radius: 18px;
-  min-height: 130px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 16px 55px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
-  position: relative;
-}
-
-.nav-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.55);
-}
-
-.nav-head {
+/* Luxury Nav Cards */
+.nav-card-luxury {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 24px;
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 
-.nav-icon {
-  width: 44px;
-  height: 44px;
+.card-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.icon-box {
+  width: 50px;
+  height: 50px;
   border-radius: 14px;
   display: grid;
   place-items: center;
-  font-weight: 900;
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 20px;
+  color: #fff;
 }
 
-.nav-title {
-  font-weight: 900;
+.card-info h3 {
+  color: #fff;
+  margin: 0;
+  font-weight: 700;
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.93);
-  margin-bottom: 2px;
+}
+.card-info p {
+  color: #64748b;
+  margin: 0;
+  font-size: 12px;
+}
+.card-arrow {
+  color: #64748b;
+  font-size: 18px;
+  transition: 0.3s;
 }
 
-.nav-desc {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
+/* Theme Colors */
+.blue-theme .icon-box {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+.purple-theme .icon-box {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+.green-theme .icon-box {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
 }
 
-.nav-foot {
-  margin-top: 12px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.75);
+/* Hover Effects */
+.nav-card-luxury:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.blue-theme:hover {
+  box-shadow: 0 15px 30px rgba(59, 130, 246, 0.15);
+}
+.purple-theme:hover {
+  box-shadow: 0 15px 30px rgba(168, 85, 247, 0.15);
+}
+.green-theme:hover {
+  box-shadow: 0 15px 30px rgba(34, 197, 94, 0.15);
 }
 
-/* gradients */
-.nav-blue {
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.22),
-    rgba(255, 255, 255, 0.03)
-  );
-  border: 1px solid rgba(59, 130, 246, 0.18);
+.nav-card-luxury:hover .card-arrow {
+  transform: translateX(5px);
+  color: #fff;
 }
 
-.nav-purple {
-  background: linear-gradient(
-    135deg,
-    rgba(168, 85, 247, 0.2),
-    rgba(255, 255, 255, 0.03)
-  );
-  border: 1px solid rgba(168, 85, 247, 0.16);
+.btn-logout-luxury {
+  background: rgba(239, 44, 44, 0.1) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 44, 44, 0.2) !important;
+  border-radius: 12px !important;
+  height: 42px !important;
+  font-weight: 600 !important;
+}
+.btn-logout-luxury:hover {
+  background: #ef4444 !important;
+  color: #fff !important;
 }
 
-.nav-green {
-  background: linear-gradient(
-    135deg,
-    rgba(34, 197, 94, 0.16),
-    rgba(255, 255, 255, 0.03)
-  );
-  border: 1px solid rgba(34, 197, 94, 0.14);
-}
-
-/* ✅ ปรับสี typography ของ ant ให้เข้ากับ dark (เฉพาะในหน้านี้) */
-:deep(.ant-card-body) {
-  color: rgba(255, 255, 255, 0.92);
-}
-:deep(.ant-alert-message) {
-  font-weight: 700;
+@media (max-width: 768px) {
+  .welcome-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .stats-grid {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
 }
 </style>

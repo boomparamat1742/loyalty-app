@@ -8,5 +8,5 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-const text = ref("/customer"); // ✅ ใส่ path ที่มีจริง
+const text = ref("/customer/purchase"); // ✅ ใส่ path ที่มีจริง
 </script>
