@@ -116,9 +116,9 @@ const redeem = async (r) => {
         flex:0 0 auto;
       `,
           },
-          res?.image_url
+          r?.image_url
             ? h("img", {
-                src: res.image_url,
+                src: r?.image_url,
                 style: "width:100%; height:100%; object-fit:cover;",
               })
             : h(
@@ -172,6 +172,7 @@ const redeem = async (r) => {
     console.error(e);
     message.error(e?.message || "แลกไม่สำเร็จ");
   } finally {
+    init();
     redeemingId.value = null;
   }
 };

@@ -208,7 +208,7 @@ const save = async () => {
 
             <div class="purchase-actions">
               <a-button class="btn-back" @click="navigateTo('/customer')">
-                ยกเลิก
+                กลับสู่หน้าหลัก
               </a-button>
 
               <a-button
@@ -434,7 +434,7 @@ const save = async () => {
   border-radius: 16px !important;
   border: 1px solid #e2e8f0 !important;
   color: #64748b !important;
-  width: 100px;
+  width: 200px;
 }
 
 .purchase-actions {
