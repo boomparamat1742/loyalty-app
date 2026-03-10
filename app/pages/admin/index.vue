@@ -1,5 +1,14 @@
 <script setup>
 import { message } from "ant-design-vue";
+import {
+  LineChartOutlined,
+  GiftOutlined,
+  TeamOutlined,
+  ArrowRightOutlined,
+  FileProtectOutlined,
+  DatabaseOutlined,
+  AuditOutlined, // Icon ใหม่
+} from "@ant-design/icons-vue";
 
 definePageMeta({ layout: "admin" });
 
@@ -99,7 +108,7 @@ const logout = async () => {
                 <div class="icon-box"><LineChartOutlined /></div>
                 <div class="card-info">
                   <h3>ยอดขายรวม</h3>
-                  <p>Daily & Monthly Report</p>
+                  <p><FileProtectOutlined /> Daily & Monthly Report</p>
                 </div>
               </div>
               <div class="card-arrow"><ArrowRightOutlined /></div>
@@ -114,7 +123,7 @@ const logout = async () => {
                 <div class="icon-box"><GiftOutlined /></div>
                 <div class="card-info">
                   <h3>จัดการของรางวัล</h3>
-                  <p>Inventory & Points</p>
+                  <p><DatabaseOutlined /> Inventory & Points</p>
                 </div>
               </div>
               <div class="card-arrow"><ArrowRightOutlined /></div>
@@ -129,7 +138,7 @@ const logout = async () => {
                 <div class="icon-box"><TeamOutlined /></div>
                 <div class="card-info">
                   <h3>สมาชิกทั้งหมด</h3>
-                  <p>User Management</p>
+                  <p><AuditOutlined /> User Management</p>
                 </div>
               </div>
               <div class="card-arrow"><ArrowRightOutlined /></div>

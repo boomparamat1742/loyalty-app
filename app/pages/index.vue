@@ -31,7 +31,10 @@ definePageMeta({ layout: "default" });
               ด้วยระบบสะสมแต้มอัจฉริยะที่ออกแบบมาเพื่อคุณโดยเฉพาะ
             </p>
 
-            <div class="home-actions">
+            <div
+              class="home-actions"
+              style="display: flex; gap: 16px; align-items: center"
+            >
               <NuxtLink to="/auth/login">
                 <a-button
                   type="primary"

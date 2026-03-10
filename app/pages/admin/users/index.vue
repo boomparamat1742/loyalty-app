@@ -97,6 +97,41 @@ const setRole = async (record, nextRole) => {
     loading.value = false;
   }
 };
+const deleteUser = async (record) => {
+  try {
+    if (!record?.id) return;
+
+    if (record.id === meId.value) return message.warning("ห้ามลบตัวเอง");
+
+    Modal.confirm({
+      title: "ยืนยันลบผู้ใช้",
+      content: `ต้องการลบ ${record.email} ใช่หรือไม่ ?`,
+      okText: "ลบ",
+      okType: "danger",
+      cancelText: "ยกเลิก",
+
+      async onOk() {
+        loading.value = true;
+
+        const { error } = await supabase
+          .from("profiles")
+          .delete()
+          .eq("id", record.id);
+
+        if (error) throw error;
+
+        rows.value = rows.value.filter((u) => u.id !== record.id);
+
+        message.success("ลบผู้ใช้แล้ว");
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    message.error(e?.message || "ลบผู้ใช้ไม่สำเร็จ");
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <template>
@@ -120,6 +155,9 @@ const setRole = async (record, nextRole) => {
         <a-button class="btn-soft" @click="fetchUsers" :loading="loading"
           >Refresh</a-button
         >
+        <NuxtLink to="/admin">
+          <a-button type="primary">กลับเมนูหลัก</a-button>
+        </NuxtLink>
       </div>
     </div>
 
@@ -160,6 +198,15 @@ const setRole = async (record, nextRole) => {
                     ? "ตั้งเป็น Customer"
                     : "ตั้งเป็น Admin"
                 }}
+              </a-button>
+              <a-button
+                danger
+                size="small"
+                class="btn-role"
+                :disabled="record.id === meId"
+                @click="deleteUser(record)"
+              >
+                ลบผู้ใช้
               </a-button>
 
               <a-tag v-if="record.id === meId" class="me-tag">คุณ</a-tag>
