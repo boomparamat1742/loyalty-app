@@ -4,7 +4,7 @@ import {
   DashboardOutlined,
   ShoppingCartOutlined,
   GiftOutlined,
-  UsersOutlined,
+  TeamOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -94,7 +94,7 @@ const toggleSidebar = () => {
 
         <a-menu-item key="/admin/users">
           <template #icon>
-            <UsersOutlined />
+            <TeamOutlined />
           </template>
           <NuxtLink to="/admin/users" style="text-decoration: none">
             Users
