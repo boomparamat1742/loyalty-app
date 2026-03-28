@@ -1,5 +1,6 @@
 <script setup>
 import { message } from "ant-design-vue";
+import dayjs from "dayjs";
 import {
   LineChartOutlined,
   GiftOutlined,
@@ -7,7 +8,9 @@ import {
   ArrowRightOutlined,
   FileProtectOutlined,
   DatabaseOutlined,
-  AuditOutlined, // Icon ใหม่
+  AuditOutlined,
+  UserOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons-vue";
 
 definePageMeta({ layout: "admin" });
@@ -16,8 +19,23 @@ const supabase = useSupabase();
 const me = ref(null);
 const loading = ref(true);
 
+// Statistics
+const stats = ref({
+  totalUsers: 0,
+  totalRewards: 0,
+  totalSales: 0,
+  todaySales: 0,
+  activeRewards: 0,
+});
+const statsLoading = ref(true);
+
+// Recent activity
+const recentActivity = ref([]);
+const activityLoading = ref(false);
+
 onMounted(async () => {
   try {
+    // Load user profile
     const { data } = await supabase.auth.getUser();
     const user = data.user;
     if (!user) return navigateTo("/auth/login");
@@ -30,6 +48,12 @@ onMounted(async () => {
 
     if (error) throw error;
     me.value = p;
+
+    // Load statistics in parallel
+    await Promise.all([
+      loadStatistics(),
+      loadRecentActivity(),
+    ]);
   } catch (e) {
     console.error(e);
     message.error(e?.message || "โหลดข้อมูลไม่สำเร็จ");
@@ -38,9 +62,77 @@ onMounted(async () => {
   }
 });
 
+const loadStatistics = async () => {
+  try {
+    statsLoading.value = true;
+
+    const [usersRes, rewardsRes, salesRes, activeRewardsRes] = await Promise.all([
+      supabase.from("profiles").select("id", { count: "exact" }),
+      supabase.from("rewards").select("id", { count: "exact" }),
+      supabase.from("sales").select("amount", { count: "exact" }),
+      supabase.from("rewards").select("id", { count: "exact" }).eq("is_active", true),
+    ]);
+
+    stats.value.totalUsers = usersRes.count || 0;
+    stats.value.totalRewards = rewardsRes.count || 0;
+    stats.value.activeRewards = activeRewardsRes.count || 0;
+
+    // Calculate total sales and today's sales
+    if (salesRes.data) {
+      stats.value.totalSales = salesRes.data.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+      const today = dayjs().format("YYYY-MM-DD");
+      const todayData = salesRes.data.filter(item => 
+        dayjs(item.created_at).format("YYYY-MM-DD") === today
+      );
+      stats.value.todaySales = todayData.reduce((sum, item) => sum + (item.amount || 0), 0);
+    }
+  } catch (e) {
+    console.error("Failed to load statistics:", e);
+  } finally {
+    statsLoading.value = false;
+  }
+};
+
+const loadRecentActivity = async () => {
+  try {
+    activityLoading.value = true;
+
+    // Load recent sales
+    const { data } = await supabase
+      .from("sales")
+      .select("id, amount, created_at, user_id")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (data) {
+      recentActivity.value = data.map(item => ({
+        ...item,
+        type: "sale",
+        description: `Sale of ${item.amount}฿`,
+      }));
+    }
+  } catch (e) {
+    console.error("Failed to load activity:", e);
+  } finally {
+    activityLoading.value = false;
+  }
+};
+
 const logout = async () => {
   await supabase.auth.signOut();
   navigateTo("/auth/login");
+};
+
+const formatCurrency = (val) => {
+  return new Intl.NumberFormat("th-TH", {
+    style: "currency",
+    currency: "THB",
+  }).format(val);
+};
+
+const formatDate = (date) => {
+  return dayjs(date).format("DD/MM/YYYY HH:mm");
 };
 </script>
 
@@ -50,19 +142,20 @@ const logout = async () => {
     <div class="glow-orb orb-2"></div>
 
     <div class="admin-shell">
+      <!-- Top Bar -->
       <div class="topbar">
         <div class="title-wrap">
           <div class="admin-label">
-            <span class="dot"></span> SYSTEM OVERVIEW
+            <span class="dot"></span> DASHBOARD
           </div>
           <a-typography-title :level="2" class="page-title">
-            Admin <span class="text-gradient">Control Panel</span>
+            Admin <span class="text-gradient">Management</span>
           </a-typography-title>
         </div>
 
         <a-space size="middle">
           <div class="server-status">
-            <span class="status-text">Network: Online</span>
+            <span class="status-text">System: Online</span>
             <div class="pulse-green"></div>
           </div>
           <a-button class="btn-logout-luxury" @click="logout">
@@ -71,6 +164,7 @@ const logout = async () => {
         </a-space>
       </div>
 
+      <!-- Welcome Card -->
       <a-card class="glass-main" :bordered="false">
         <div class="welcome-container">
           <div class="welcome-profile">
@@ -100,6 +194,58 @@ const logout = async () => {
         </div>
       </a-card>
 
+      <!-- Statistics Cards -->
+      <a-row :gutter="[20, 20]" style="margin-top: 24px">
+        <a-col :xs="24" :sm="12" :md="6">
+          <a-card class="stat-card blue-card" :bordered="false" :loading="statsLoading">
+            <template #title>
+              <div class="stat-card-title">
+                <TeamOutlined /> Total Users
+              </div>
+            </template>
+            <div class="stat-value">{{ stats.totalUsers }}</div>
+            <div class="stat-footer">Active members in system</div>
+          </a-card>
+        </a-col>
+
+        <a-col :xs="24" :sm="12" :md="6">
+          <a-card class="stat-card purple-card" :bordered="false" :loading="statsLoading">
+            <template #title>
+              <div class="stat-card-title">
+                <GiftOutlined /> Rewards
+              </div>
+            </template>
+            <div class="stat-value">{{ stats.activeRewards }}/{{ stats.totalRewards }}</div>
+            <div class="stat-footer">Active rewards available</div>
+          </a-card>
+        </a-col>
+
+        <a-col :xs="24" :sm="12" :md="6">
+          <a-card class="stat-card green-card" :bordered="false" :loading="statsLoading">
+            <template #title>
+              <div class="stat-card-title">
+                <LineChartOutlined /> Today Sales
+              </div>
+            </template>
+            <div class="stat-value">{{ formatCurrency(stats.todaySales) }}</div>
+            <div class="stat-footer">Transactions today</div>
+          </a-card>
+        </a-col>
+
+        <a-col :xs="24" :sm="12" :md="6">
+          <a-card class="stat-card orange-card" :bordered="false" :loading="statsLoading">
+            <template #title>
+              <div class="stat-card-title">
+                <DatabaseOutlined /> Total Sales
+              </div>
+            </template>
+            <div class="stat-value">{{ formatCurrency(stats.totalSales) }}</div>
+            <div class="stat-footer">All time revenue</div>
+          </a-card>
+        </a-col>
+      </a-row>
+
+      <!-- Action Cards -->
       <a-row :gutter="[20, 20]" style="margin-top: 24px">
         <a-col :xs="24" :md="8">
           <NuxtLink class="card-link" to="/admin/sales">
@@ -107,8 +253,8 @@ const logout = async () => {
               <div class="card-inner">
                 <div class="icon-box"><LineChartOutlined /></div>
                 <div class="card-info">
-                  <h3>ยอดขายรวม</h3>
-                  <p><FileProtectOutlined /> Daily & Monthly Report</p>
+                  <h3>Sales Analytics</h3>
+                  <p><FileProtectOutlined /> Daily & Monthly Reports</p>
                 </div>
               </div>
               <div class="card-arrow"><ArrowRightOutlined /></div>
@@ -122,7 +268,7 @@ const logout = async () => {
               <div class="card-inner">
                 <div class="icon-box"><GiftOutlined /></div>
                 <div class="card-info">
-                  <h3>จัดการของรางวัล</h3>
+                  <h3>Reward Management</h3>
                   <p><DatabaseOutlined /> Inventory & Points</p>
                 </div>
               </div>
@@ -137,8 +283,8 @@ const logout = async () => {
               <div class="card-inner">
                 <div class="icon-box"><TeamOutlined /></div>
                 <div class="card-info">
-                  <h3>สมาชิกทั้งหมด</h3>
-                  <p><AuditOutlined /> User Management</p>
+                  <h3>User Management</h3>
+                  <p><AuditOutlined /> Roles & Permissions</p>
                 </div>
               </div>
               <div class="card-arrow"><ArrowRightOutlined /></div>
@@ -146,6 +292,36 @@ const logout = async () => {
           </NuxtLink>
         </a-col>
       </a-row>
+
+      <!-- Recent Activity -->
+      <a-card class="glass-main" :bordered="false" style="margin-top: 24px">
+        <template #title>
+          <div style="color: #1f2937; font-weight: 600; font-size: 14px">
+            <AuditOutlined style="margin-right: 8px" /> RECENT ACTIVITY
+          </div>
+        </template>
+
+        <a-spin :spinning="activityLoading">
+          <div v-if="recentActivity.length === 0" class="empty-state">
+            <p>No recent activity</p>
+          </div>
+          <a-list v-else :dataSource="recentActivity" :split="false">
+            <template #renderItem="{ item }">
+              <a-list-item style="background: rgba(59, 130, 246, 0.02); margin-bottom: 8px; border-radius: 8px; padding: 12px 16px">
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center">
+                  <div>
+                    <div style="color: #1f2937; font-weight: 500">{{ item.description }}</div>
+                    <div style="color: #6b7280; font-size: 12px; margin-top: 4px">User ID: {{ item.user_id }}</div>
+                  </div>
+                  <div style="color: #9ca3af; font-size: 12px; white-space: nowrap; margin-left: 16px">
+                    {{ formatDate(item.created_at) }}
+                  </div>
+                </div>
+              </a-list-item>
+            </template>
+          </a-list>
+        </a-spin>
+      </a-card>
     </div>
   </div>
 </template>
@@ -156,7 +332,7 @@ const logout = async () => {
 .admin-page {
   min-height: 100vh;
   padding: 40px 24px;
-  background: #020617; /* Deepest blue */
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   font-family: "Plus Jakarta Sans", sans-serif;
   position: relative;
   overflow: hidden;
@@ -216,7 +392,7 @@ const logout = async () => {
 }
 
 .page-title {
-  color: #fff !important;
+  color: #e0e7ff !important;
   margin: 0 !important;
   font-weight: 800 !important;
 }
@@ -225,13 +401,13 @@ const logout = async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.7);
   padding: 6px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 .status-text {
-  color: #94a3b8;
+  color: #4b5563;
   font-size: 12px;
 }
 .pulse-green {
@@ -256,11 +432,12 @@ const logout = async () => {
 
 /* Glass Main Card */
 .glass-main {
-  background: rgba(255, 255, 255, 0.03) !important;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 20px !important;
   margin-top: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 .welcome-container {
@@ -290,18 +467,18 @@ const logout = async () => {
 }
 
 .user-greeting {
-  color: #94a3b8;
+  color: #6b7280;
   font-size: 16px;
 }
 .user-email {
-  color: #fff;
+  color: #1f2937;
   font-weight: 700;
 }
 .role-badge {
   display: inline-block;
   padding: 2px 10px;
-  background: rgba(168, 85, 247, 0.2);
-  color: #d8b4fe;
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 800;
@@ -320,11 +497,11 @@ const logout = async () => {
 }
 .s-label {
   font-size: 10px;
-  color: #64748b;
+  color: #6b7280;
   letter-spacing: 1px;
 }
 .s-value {
-  color: #fff;
+  color: #1f2937;
   font-weight: 800;
   font-size: 14px;
 }
@@ -334,20 +511,21 @@ const logout = async () => {
 .v-divider {
   width: 1px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(59, 130, 246, 0.2);
 }
 
 /* Luxury Nav Cards */
 .nav-card-luxury {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
   padding: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .card-inner {
@@ -366,18 +544,18 @@ const logout = async () => {
 }
 
 .card-info h3 {
-  color: #fff;
+  color: #1f2937;
   margin: 0;
   font-weight: 700;
   font-size: 16px;
 }
 .card-info p {
-  color: #64748b;
+  color: #6b7280;
   margin: 0;
   font-size: 12px;
 }
 .card-arrow {
-  color: #64748b;
+  color: #9ca3af;
   font-size: 18px;
   transition: 0.3s;
 }
@@ -398,23 +576,24 @@ const logout = async () => {
 
 /* Hover Effects */
 .nav-card-luxury:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.95);
   transform: translateY(-5px);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
 }
 .blue-theme:hover {
-  box-shadow: 0 15px 30px rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
 }
 .purple-theme:hover {
-  box-shadow: 0 15px 30px rgba(168, 85, 247, 0.15);
+  border-color: #a855f7;
 }
 .green-theme:hover {
-  box-shadow: 0 15px 30px rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
 }
 
 .nav-card-luxury:hover .card-arrow {
   transform: translateX(5px);
-  color: #fff;
+  color: #3b82f6;
 }
 
 .btn-logout-luxury {
@@ -430,6 +609,86 @@ const logout = async () => {
   color: #fff !important;
 }
 
+/* Statistics Cards */
+.stat-card {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.stat-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 12px 0 8px 0;
+}
+
+.stat-footer {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.blue-card .stat-card-title {
+  color: #3b82f6;
+}
+.blue-card:hover {
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+}
+
+.purple-card .stat-card-title {
+  color: #a855f7;
+}
+.purple-card:hover {
+  box-shadow: 0 10px 25px rgba(168, 85, 247, 0.15);
+}
+
+.green-card .stat-card-title {
+  color: #22c55e;
+}
+.green-card:hover {
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.15);
+}
+
+.orange-card .stat-card-title {
+  color: #f97316;
+}
+.orange-card:hover {
+  box-shadow: 0 10px 25px rgba(249, 115, 22, 0.15);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: #6b7280;
+}
+
+/* Card Link */
+.card-link {
+  text-decoration: none;
+}
+
 @media (max-width: 768px) {
   .welcome-container {
     flex-direction: column;
@@ -439,6 +698,9 @@ const logout = async () => {
     width: 100%;
     justify-content: space-between;
     margin-top: 20px;
+  }
+  .stat-value {
+    font-size: 22px;
   }
 }
 </style>

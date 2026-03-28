@@ -224,10 +224,11 @@ const deleteUser = async (record) => {
   </div>
 </template>
 <style scoped>
+/* ===== Global ===== */
 .users-page {
-  padding: 24px;
+  padding: 28px 32px;
   min-height: calc(100vh - 64px);
-  background: #f5f7fb;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
 /* ===== Topbar ===== */
@@ -235,96 +236,244 @@ const deleteUser = async (record) => {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 14px;
+  gap: 20px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 28px;
 }
 
 .users-title {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+}
+
+.users-title :deep(.ant-typography) {
+  color: #0f172a !important;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .users-sub {
-  color: #6b7280;
-  font-size: 13px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* ===== Actions ===== */
 .users-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .users-search {
-  width: 280px;
-  border-radius: 10px !important;
+  width: 300px !important;
+  border-radius: 12px !important;
+  border: 2px solid #e2e8f0 !important;
+  transition: all 0.3s ease !important;
+}
+
+.users-search:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+}
+
+.users-search:focus {
+  border-color: #1e40af !important;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1) !important;
 }
 
 /* ===== Card ===== */
 .users-card {
-  border-radius: 16px;
+  border-radius: 18px !important;
   background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.users-card:hover {
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.08);
 }
 
 /* ===== Table ===== */
 .users-table :deep(.ant-table) {
   background: transparent;
+  font-size: 14px;
 }
 
 .users-table :deep(.ant-table-thead > tr > th) {
-  background: #f9fafb !important;
-  color: #111827 !important;
-  font-weight: 600;
-  border-bottom: 1px solid #e5e7eb !important;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  color: #0f172a !important;
+  font-weight: 700;
+  border-bottom: 2px solid #e2e8f0 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 12px !important;
+}
+
+.users-table :deep(.ant-table-tbody > tr) {
+  transition: all 0.2s ease;
 }
 
 .users-table :deep(.ant-table-tbody > tr > td) {
-  border-bottom: 1px solid #f0f0f0 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 14px 12px !important;
+  color: #334155;
 }
 
 .users-table :deep(.ant-table-tbody > tr:hover > td) {
-  background: #f3f6ff !important;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%) !important;
+}
+
+.users-table :deep(.ant-table-row-selected > td) {
+  background: #eff6ff !important;
+}
+
+/* ===== Table Row Animation ===== */
+.users-table :deep(.ant-table-tbody > tr) {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .muted {
-  color: #6b7280;
+  color: #94a3b8;
+  font-size: 13px;
 }
 
 /* ===== Role Tag ===== */
 .role-tag {
   border-radius: 999px;
-  font-weight: 600;
+  font-weight: 700;
+  padding: 4px 12px;
+  border: none;
+  font-size: 12px;
+  letter-spacing: 0.3px;
 }
 
 /* ===== Buttons ===== */
 .btn-soft {
   border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.btn-soft:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
 }
 
 .btn-role {
-  border-radius: 999px;
-  height: 32px;
-  padding: 0 14px;
+  border-radius: 10px;
+  height: 36px;
+  padding: 0 16px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  border: 1.5px solid #e2e8f0;
+}
+
+.btn-role:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.btn-role:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ===== Badge for self ===== */
 .me-tag {
-  border-radius: 999px;
-  padding: 2px 10px;
-  background: #e6f7ff;
-  border: 1px solid #91d5ff;
-  color: #1890ff;
-  font-weight: 600;
+  border-radius: 8px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+  border: 1.5px solid #7dd3fc;
+  color: #0369a1;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3px;
 }
 
 /* ===== Pagination ===== */
 .users-page :deep(.ant-pagination-item) {
   border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.25s ease;
+}
+
+.users-page :deep(.ant-pagination-item-active) {
+  border-color: #1e40af !important;
+  background: #eff6ff !important;
+}
+
+.users-page :deep(.ant-pagination-item:hover:not(.ant-pagination-item-active)) {
+  border-color: #cbd5e1;
+  color: #1e40af;
+}
+
+.users-page :deep(.ant-pagination-item-link) {
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.25s ease;
+}
+
+.users-page :deep(.ant-pagination-item-link:hover) {
+  border-color: #cbd5e1;
+  color: #1e40af;
+}
+
+/* ===== Empty State ===== */
+.users-page :deep(.ant-empty) {
+  padding: 40px 20px;
+}
+
+.users-page :deep(.ant-empty-description) {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* ===== Loading ===== */
+.users-page :deep(.ant-spin-spinning) {
+  color: #1e40af;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .users-page {
+    padding: 20px 16px;
+  }
+
+  .users-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .users-actions {
+    flex-direction: column;
+  }
+
+  .users-search {
+    width: 100% !important;
+  }
+
+  .users-title {
+    order: -1;
+  }
 }
 </style>

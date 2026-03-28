@@ -190,10 +190,10 @@ const save = async () => {
   </div>
 </template>
 <style scoped>
-/* ===== 🌌 Layout & High-Tech Background ===== */
+/* ===== 🌌 Layout & Dark Theme Background ===== */
 .new-sale-page {
   min-height: 100vh;
-  background: #050810; /* พื้นหลังมืดลึก */
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   padding: 60px 20px;
   display: flex;
   justify-content: center;
@@ -207,18 +207,18 @@ const save = async () => {
   height: 600px;
   border-radius: 50%;
   filter: blur(120px);
-  opacity: 0.15;
+  opacity: 0.08;
   z-index: 0;
 }
 .aura-purple {
   top: -100px;
   right: -100px;
-  background: #722ed1;
+  background: #3b82f6;
 }
 .aura-blue {
   bottom: -100px;
   left: -100px;
-  background: #1890ff;
+  background: #60a5fa;
 }
 
 .form-shell {
@@ -235,26 +235,26 @@ const save = async () => {
   margin-bottom: 40px;
 }
 .btn-back {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: #fff !important;
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: #e0e7ff !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .btn-back:hover {
-  background: rgba(114, 46, 209, 0.2) !important;
-  border-color: #722ed1 !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: #3b82f6 !important;
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 .title {
-  color: #fff !important;
+  color: #e0e7ff !important;
   margin: 0 !important;
   font-weight: 900;
   font-size: 28px;
   letter-spacing: 2px;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 .subtitle {
-  color: rgba(255, 255, 255, 0.5);
+  color: #94a3b8;
   margin: 0;
   font-size: 13px;
   text-transform: uppercase;
@@ -263,19 +263,17 @@ const save = async () => {
 
 /* ===== 💎 Glassmorphism Card ===== */
 .glass-form-card {
-  background: rgba(15, 23, 42, 0.6) !important;
-  backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 32px !important;
-  padding: 24px;
-  box-shadow:
-    0 40px 100px rgba(0, 0, 0, 0.6),
-    inset 0 0 20px rgba(255, 255, 255, 0.02);
+  background: rgba(30, 41, 59, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  border-radius: 20px !important;
+  padding: 32px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
 }
 
 .form-group-label {
-  color: #d8b4fe;
-  font-weight: 800;
+  color: #60a5fa;
+  font-weight: 700;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -287,8 +285,8 @@ const save = async () => {
 
 /* ===== ⌨️ Premium Inputs ===== */
 :deep(.ant-form-item-label > label) {
-  color: rgba(255, 255, 255, 0.8) !important;
-  font-weight: 500;
+  color: #e0e7ff !important;
+  font-weight: 600;
   font-size: 14px;
 }
 
@@ -296,45 +294,45 @@ const save = async () => {
 .premium-select :deep(.ant-select-selector),
 .premium-input-number,
 .premium-input-area {
-  background: rgba(0, 0, 0, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 16px !important;
-  color: #ffffff !important;
+  background: rgba(15, 23, 42, 0.5) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  border-radius: 12px !important;
+  color: #e0e7ff !important;
   min-height: 50px !important;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.3s ease !important;
 }
 
 /* ปรับสีตัวเลขใน InputNumber */
 :deep(.ant-input-number-input),
 :deep(.ant-select-selection-item),
 :deep(.ant-picker-input > input) {
-  color: #fff !important;
+  color: #e0e7ff !important;
   font-weight: 600 !important;
 }
 
 .premium-input:hover,
 .premium-select:hover :deep(.ant-select-selector),
 .premium-input-number:hover {
-  border-color: rgba(114, 46, 209, 0.6) !important;
-  box-shadow: 0 0 15px rgba(114, 46, 209, 0.2) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
 }
 
 /* ===== 🔋 Calculator Panel (High-Tech Display) ===== */
 .calculator-panel {
   position: relative;
-  background: rgba(114, 46, 209, 0.05);
-  border-radius: 24px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 16px;
   padding: 30px;
   margin: 30px 0;
-  border: 1px solid rgba(114, 46, 209, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
   overflow: hidden;
   transition: all 0.5s ease;
 }
 .calculator-panel.has-value {
-  background: rgba(114, 46, 209, 0.12);
-  border-color: rgba(114, 46, 209, 0.4);
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.5);
   transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
 }
 .calc-glow {
   position: absolute;
@@ -342,9 +340,9 @@ const save = async () => {
   left: 50%;
   width: 100px;
   height: 100px;
-  background: #722ed1;
+  background: #3b82f6;
   filter: blur(60px);
-  opacity: 0.2;
+  opacity: 0.15;
   transform: translate(-50%, -50%);
 }
 .calc-content {
@@ -353,7 +351,7 @@ const save = async () => {
   text-align: center;
 }
 .calc-label {
-  color: #d8b4fe;
+  color: #60a5fa;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 3px;
@@ -366,40 +364,37 @@ const save = async () => {
   gap: 10px;
 }
 .calc-num {
-  color: #fff;
+  color: #60a5fa;
   font-size: 56px;
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 0 30px rgba(114, 46, 209, 0.5);
 }
 .calc-unit {
-  color: #fff;
+  color: #3b82f6;
   font-size: 16px;
   font-weight: 700;
-  opacity: 0.6;
 }
 .calc-footer {
-  color: rgba(255, 255, 255, 0.3);
+  color: #64748b;
   font-size: 10px;
   letter-spacing: 1px;
 }
 
-/* ===== ⚡ Action Button (Neon Gradient) ===== */
+/* ===== ⚡ Action Button (Gradient) ===== */
 .btn-save-sale {
-  height: 60px !important;
-  border-radius: 20px !important;
-  font-weight: 800 !important;
+  height: 48px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
   font-size: 16px !important;
-  letter-spacing: 2px !important;
-  background: linear-gradient(135deg, #722ed1 0%, #3b82f6 100%) !important;
+  letter-spacing: 1px !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
   border: none !important;
-  box-shadow: 0 20px 40px rgba(114, 46, 209, 0.4) !important;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3) !important;
+  transition: all 0.3s ease !important;
 }
 .btn-save-sale:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 25px 50px rgba(114, 46, 209, 0.6) !important;
-  filter: brightness(1.2);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.4) !important;
 }
 .btn-save-sale:active {
   transform: scale(0.98);
