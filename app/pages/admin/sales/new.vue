@@ -102,7 +102,7 @@ const save = async () => {
               v-model:value="form.customer_id"
               show-search
               size="large"
-              placeholder="ค้นหาด้วยอีเมลลูกค้า"
+              placeholder="ค้นหาด้วยชื่อผู้ใช้หรืออีเมล"
               :loading="loadingCustomers"
               :filter-option="filterOption"
               :options="customers.map((c) => ({ value: c.id, label: memberLabel(c) }))"
@@ -250,15 +250,19 @@ dd {
 
 @media (max-width: 900px) {
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
-  .summary {
-    order: -1;
+  .summary-card {
+    position: static;
+    padding: 18px 20px;
+  }
+  .summary-points {
+    font-size: 40px;
   }
 }
 @media (max-width: 520px) {
   .row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
   }
 }

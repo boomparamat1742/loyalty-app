@@ -106,7 +106,7 @@ import { GiftOutlined, SafetyCertificateOutlined, ThunderboltOutlined } from "@a
 
 @media (max-width: 900px) {
   .auth {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .auth-showcase {
     display: none;

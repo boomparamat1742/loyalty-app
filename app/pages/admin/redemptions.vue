@@ -320,7 +320,7 @@ watch(filtered, () => (mobileLimit.value = 20));
 }
 @media (max-width: 560px) {
   .stats {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .stats > :last-child {
     grid-column: span 2;

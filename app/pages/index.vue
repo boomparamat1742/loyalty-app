@@ -675,7 +675,7 @@ const faqs = [
 
 @media (max-width: 960px) {
   .hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .hero-visual {
     min-height: 360px;
@@ -684,15 +684,15 @@ const faqs = [
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .benefits {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 720px) {
   .steps {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .benefit-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 360px) {
@@ -705,7 +705,7 @@ const faqs = [
     gap: 22px;
   }
   .reward-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .note-1 {
     bottom: 16px;

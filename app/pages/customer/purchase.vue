@@ -94,7 +94,7 @@ const save = async () => {
     <div class="purchase">
       <section class="surface surface-pad fade-up fade-up-2">
         <a-form layout="vertical" :model="form" requiredMark="optional" @finish="save">
-          <a-form-item label="สินค้า / รุ่นโทรศัพท์" name="item_name">
+          <a-form-item label="สินค้า / รุ่นโทรศัพท์" name="item_name" required>
             <a-input
               v-model:value="form.item_name"
               size="large"
@@ -105,7 +105,7 @@ const save = async () => {
             </a-input>
           </a-form-item>
 
-          <a-form-item label="ราคาที่ชำระจริง (บาท)" name="amount">
+          <a-form-item label="ราคาที่ชำระจริง (บาท)" name="amount" required>
             <a-input-number
               v-model:value="form.amount"
               size="large"
@@ -251,10 +251,14 @@ const save = async () => {
 
 @media (max-width: 900px) {
   .purchase {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
-  .preview {
-    order: -1;
+  .preview-card {
+    padding: 18px 20px;
+    gap: 10px;
+  }
+  .preview-points {
+    font-size: 40px;
   }
 }
 @media (max-width: 480px) {

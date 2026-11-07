@@ -334,7 +334,7 @@ const submit = () => {
 
 @media (max-width: 960px) {
   .reward-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .preview {
     position: static;
@@ -343,7 +343,7 @@ const submit = () => {
 }
 @media (max-width: 520px) {
   .row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
   }
 }

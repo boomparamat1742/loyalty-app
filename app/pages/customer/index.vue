@@ -400,11 +400,17 @@ const totalEarned = computed(() =>
 
 @media (max-width: 960px) {
   .overview {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .card-col {
     max-width: 460px;
     width: 100%;
+  }
+}
+@media (max-width: 960px) {
+  .tx-list {
+    max-height: none;
+    overflow: visible;
   }
 }
 @media (max-width: 560px) {
