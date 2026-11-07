@@ -299,5 +299,30 @@ const stockChip = (stock) => {
   .search {
     max-width: none;
   }
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .item-body {
+    padding: 12px;
+    gap: 10px;
+  }
+  .item-title {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .item-cost .text-accent {
+    font-size: 20px;
+  }
+  .item-stock {
+    top: 8px;
+    right: 8px;
+    font-size: 10.5px;
+    padding: 2px 6px;
+  }
+  .item-toggle {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
 }
 </style>

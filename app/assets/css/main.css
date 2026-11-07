@@ -443,6 +443,56 @@ img {
   }
 }
 
+/* ---------- การ์ดรายการ (แทนตารางบนมือถือ) ---------- */
+.m-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.m-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.m-item:last-child {
+  border-bottom: 0;
+}
+.m-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.m-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.m-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.m-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.m-actions .ant-btn {
+  flex: 1;
+}
+.m-more {
+  padding: 12px 18px 18px;
+}
+
 @media (max-width: 640px) {
   .container {
     padding: 0 16px;
@@ -452,5 +502,44 @@ img {
   }
   .surface-header {
     padding: 14px 18px;
+  }
+
+  /* ปฏิทินเลือกช่วงวันที่: เรียง 2 เดือนลงมาแทนเคียงกัน */
+  .ant-picker-dropdown .ant-picker-panels {
+    flex-direction: column;
+  }
+  .ant-picker-dropdown .ant-picker-range-arrow {
+    display: none;
+  }
+
+  /* ตัวเลือกแบบ segmented เลื่อนได้ถ้ายาวเกินจอ */
+  .ant-segmented {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ant-segmented::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* modal ใช้พื้นที่จอให้เต็มขึ้น */
+  .ant-modal {
+    max-width: calc(100vw - 24px) !important;
+    margin: 0 auto;
+  }
+  .ant-modal .ant-modal-content {
+    padding: 20px 18px;
+  }
+
+  /* ปุ่มใน header ของหน้าแบ่งเต็มความกว้าง */
+  .page-actions > *,
+  .page-actions > a > .ant-btn {
+    flex: 1;
+  }
+  .page-actions > a {
+    display: flex;
+  }
+  .page-actions > a > .ant-btn {
+    width: 100%;
   }
 }

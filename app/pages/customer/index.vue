@@ -42,7 +42,7 @@ const load = async () => {
         .limit(50),
       supabase
         .from("redemptions")
-        .select("id, reward_title, reward_image_url, points_cost, redeemed_at")
+        .select("id, code, status, reward_title, reward_image_url, points_cost, redeemed_at")
         .eq("customer_id", user.id)
         .order("redeemed_at", { ascending: false })
         .limit(50),
@@ -182,10 +182,11 @@ const totalEarned = computed(() =>
                 </span>
                 <div class="tx-main">
                   <div class="tx-title">{{ r.reward_title }}</div>
-                  <div class="tx-sub subtle">{{ fmt(r.redeemed_at) }}</div>
+                  <div class="tx-sub subtle"><span v-if="r.code" class="num">#{{ r.code }} · </span>{{ fmt(r.redeemed_at) }}</div>
                 </div>
                 <div class="tx-right">
                   <div class="num tx-minus">−{{ Number(r.points_cost).toLocaleString() }} แต้ม</div>
+                  <span v-if="r.status" class="chip" :class="r.status === 'fulfilled' ? 'chip-success' : 'chip-accent'">{{ r.status === "fulfilled" ? "รับของแล้ว" : "รอรับที่ร้าน" }}</span>
                 </div>
               </li>
             </ul>

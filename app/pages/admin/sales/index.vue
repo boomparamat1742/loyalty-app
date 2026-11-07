@@ -166,6 +166,11 @@ const columns = [
 
 const tableRows = computed(() => [...rows.value].reverse());
 
+// มือถือ: แสดงเป็นการ์ดทีละ 20 รายการ
+const isMobile = useIsMobile();
+const mobileLimit = ref(20);
+watch(rows, () => (mobileLimit.value = 20));
+
 const onPickRange = (vals) => {
   if (!vals || !vals[0] || !vals[1]) return;
   tab.value = "custom";
@@ -236,7 +241,27 @@ const onPickRange = (vals) => {
         <h2 class="surface-title">รายการยอดขาย</h2>
         <span class="subtle num">{{ kpiOrders.toLocaleString() }} รายการ</span>
       </div>
+      <a-spin v-if="isMobile" :spinning="loading">
+        <ul v-if="tableRows.length" class="m-list">
+          <li v-for="r in tableRows.slice(0, mobileLimit)" :key="r.id" class="m-item">
+            <div class="m-head">
+              <span class="m-title">{{ r.customer_email || "-" }}</span>
+              <span class="num">{{ fmtTHB(r.amount) }}</span>
+            </div>
+            <div class="m-meta">
+              <span>{{ fmtDateTime(r.created_at) }}</span>
+              <span v-if="r.note">{{ r.note }}</span>
+              <span class="points-plus">+{{ r.points_earned }} แต้ม</span>
+            </div>
+          </li>
+        </ul>
+        <div v-else-if="!loading" class="empty-block">ยังไม่มีข้อมูลยอดขายในช่วงนี้</div>
+        <div v-if="tableRows.length > mobileLimit" class="m-more">
+          <a-button block @click="mobileLimit += 20">ดูเพิ่ม ({{ tableRows.length - mobileLimit }} รายการ)</a-button>
+        </div>
+      </a-spin>
       <a-table
+        v-else
         :dataSource="tableRows"
         :columns="columns"
         rowKey="id"

@@ -156,6 +156,11 @@ const closeReset = () => {
   resetPassword.value = "";
   resetTarget.value = null;
 };
+
+// มือถือ: แสดงเป็นการ์ดทีละ 20 รายการ
+const isMobile = useIsMobile();
+const mobileLimit = ref(20);
+watch(filtered, () => (mobileLimit.value = 20));
 </script>
 
 <template>
@@ -202,7 +207,37 @@ const closeReset = () => {
         </a-input>
       </div>
 
+      <a-spin v-if="isMobile" :spinning="loading">
+        <ul v-if="filtered.length" class="m-list">
+          <li v-for="r in filtered.slice(0, mobileLimit)" :key="r.id" class="m-item">
+            <div class="m-head">
+              <span class="avatar">{{ (memberLabel(r) || "?").charAt(0).toUpperCase() }}</span>
+              <span class="m-title">{{ memberLabel(r) }}</span>
+              <span class="num" :class="{ 'text-accent': r.points > 0 }">{{ Number(r.points || 0).toLocaleString() }}</span>
+            </div>
+            <div class="m-meta">
+              <span class="chip" :class="r.role === 'admin' ? '' : 'chip-muted'">{{ r.role === "admin" ? "ผู้ดูแล" : "ลูกค้า" }}</span>
+              <span class="chip chip-muted">{{ r.username ? "username" : "อีเมล" }}</span>
+              <span v-if="r.id === auth.user?.id" class="chip chip-muted">คุณ</span>
+              <span>สมัคร {{ fmtDate(r.created_at) }}</span>
+            </div>
+            <div v-if="r.id !== auth.user?.id" class="m-actions">
+              <a-button v-if="canReset(r)" @click="openReset(r)">
+                <template #icon><KeyOutlined /></template> รีเซ็ตรหัสผ่าน
+              </a-button>
+              <a-button :danger="r.role === 'admin'" @click="setRole(r, r.role === 'admin' ? 'customer' : 'admin')">
+                {{ r.role === "admin" ? "ถอดสิทธิ์ผู้ดูแล" : "ตั้งเป็นผู้ดูแล" }}
+              </a-button>
+            </div>
+          </li>
+        </ul>
+        <div v-else-if="!loading" class="empty-block">ไม่พบสมาชิก</div>
+        <div v-if="filtered.length > mobileLimit" class="m-more">
+          <a-button block @click="mobileLimit += 20">ดูเพิ่ม ({{ filtered.length - mobileLimit }} คน)</a-button>
+        </div>
+      </a-spin>
       <a-table
+        v-else
         :dataSource="filtered"
         :columns="columns"
         rowKey="id"
@@ -399,7 +434,11 @@ const closeReset = () => {
 
 @media (max-width: 900px) {
   .stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .stats > :last-child {
+    grid-column: span 2;
   }
 }
 @media (max-width: 560px) {

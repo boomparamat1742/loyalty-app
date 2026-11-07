@@ -88,9 +88,9 @@ const showReceipt = (r, res) => {
         h("div", { class: "receipt-row" }, `ใช้แต้ม ${Number(res?.points_cost || r?.points_cost || 0).toLocaleString()} แต้ม`),
         h("div", { class: "receipt-row" }, `เวลาแลก ${fmtDT(res?.redeemed_at || new Date())}`),
         res?.redemption_id
-          ? h("div", { class: "receipt-row receipt-code" }, `รหัสอ้างอิง ${String(res.redemption_id).slice(0, 8).toUpperCase()}`)
+          ? h("div", { class: "receipt-code" }, [h("span", "รหัสรับของ"), h("strong", `#${String(res.redemption_id).slice(0, 8).toUpperCase()}`)])
           : null,
-        h("div", { class: "receipt-note" }, "กรุณาแคปหน้าจอนี้ แล้วแสดงที่หน้าร้านเพื่อรับของรางวัล"),
+        h("div", { class: "receipt-note" }, "แสดงรหัสนี้ที่หน้าร้านเพื่อรับของรางวัล (ใช้ได้ครั้งเดียว)"),
       ]),
     ]),
   });
@@ -288,6 +288,42 @@ const redeem = (r) => {
 .progress :deep(.ant-progress) {
   margin: 0;
 }
+
+/* มือถือ: 2 คอลัมน์ การ์ดกระชับขึ้น */
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .reward-body {
+    padding: 12px 12px 14px;
+    gap: 8px;
+  }
+  .reward-title {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .reward-desc {
+    display: none;
+  }
+  .cost {
+    font-size: 20px;
+  }
+  .stock-flag {
+    top: 8px;
+    left: 8px;
+    font-size: 10.5px;
+    padding: 2px 6px;
+  }
+  .progress {
+    font-size: 11px;
+  }
+  .reward-body :deep(.ant-btn-lg) {
+    height: 40px;
+    padding-inline: 8px;
+    font-size: 14px;
+  }
+}
 </style>
 
 <style>
@@ -331,8 +367,19 @@ const redeem = (r) => {
   color: var(--text-2);
 }
 .receipt-code {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.receipt-code strong {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-shadow: var(--glow-accent);
 }
 .receipt-note {
   margin-top: 8px;

@@ -8,6 +8,7 @@ import {
   WalletOutlined,
   ShoppingOutlined,
   PlusOutlined,
+  CheckSquareOutlined,
 } from "@ant-design/icons-vue";
 
 definePageMeta({ layout: "admin" });
@@ -89,6 +90,7 @@ onMounted(() => Promise.all([loadStatistics(), loadRecent()]));
 const shortcuts = [
   { to: "/admin/sales/new", icon: PlusOutlined, title: "บันทึกยอดขาย", text: "เพิ่มยอดขายและแต้มให้ลูกค้า" },
   { to: "/admin/sales", icon: LineChartOutlined, title: "รายงานยอดขาย", text: "รายวัน รายเดือน รายปี" },
+  { to: "/admin/redemptions", icon: CheckSquareOutlined, title: "การแลกรางวัล", text: "ตรวจรหัสและบันทึกการมอบของ" },
   { to: "/admin/rewards", icon: GiftOutlined, title: "จัดการของรางวัล", text: "สต็อก ราคาแต้ม และรูปภาพ" },
   { to: "/admin/users", icon: TeamOutlined, title: "สมาชิก", text: "รายชื่อและสิทธิ์ผู้ใช้" },
 ];

@@ -45,4 +45,10 @@ defineProps({
   flex-wrap: wrap;
   gap: 10px;
 }
+
+@media (max-width: 640px) {
+  .page-actions {
+    width: 100%;
+  }
+}
 </style>

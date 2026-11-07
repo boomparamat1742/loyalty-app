@@ -134,6 +134,8 @@ const revokeAdminAccess = (record) => {
     },
   });
 };
+
+const isMobile = useIsMobile();
 </script>
 
 <template>
@@ -150,7 +152,31 @@ const revokeAdminAccess = (record) => {
     </PageHeader>
 
     <section class="surface">
+      <a-spin v-if="isMobile" :spinning="loading">
+        <ul v-if="admins.length" class="m-list">
+          <li v-for="r in admins" :key="r.id" class="m-item">
+            <div class="m-head">
+              <span class="avatar">{{ (memberLabel(r) || "?").charAt(0).toUpperCase() }}</span>
+              <span class="m-title">{{ memberLabel(r) }}</span>
+              <span v-if="r.id === auth.user?.id" class="chip chip-muted">คุณ</span>
+            </div>
+            <div class="m-meta">
+              <span class="chip" :class="isRecent(r.last_sign_in_at) ? 'chip-success' : 'chip-muted'">
+                {{ isRecent(r.last_sign_in_at) ? "ใช้งานอยู่" : "ไม่ได้ใช้งาน" }}
+              </span>
+              <span>เข้าใช้ล่าสุด {{ fmtDate(r.last_sign_in_at) }}</span>
+            </div>
+            <div v-if="r.id !== auth.user?.id" class="m-actions">
+              <a-button danger @click="revokeAdminAccess(r)">
+                <template #icon><LockOutlined /></template> ถอดสิทธิ์ผู้ดูแล
+              </a-button>
+            </div>
+          </li>
+        </ul>
+        <div v-else-if="!loading" class="empty-block">ยังไม่มีผู้ดูแลระบบ</div>
+      </a-spin>
       <a-table
+        v-else
         :dataSource="admins"
         :columns="columns"
         rowKey="id"

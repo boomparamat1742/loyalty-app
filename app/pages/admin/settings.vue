@@ -163,9 +163,12 @@ const rules = [
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
 }
 .kv dd {
   margin: 0;
+  min-width: 0;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -210,7 +213,7 @@ const rules = [
 
 @media (max-width: 900px) {
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 520px) {
