@@ -1,89 +1,456 @@
-/* ===== Home Page ===== */
+/* =========================================================
+   R.Benz Rewards — Purple Dark · Tech design system
+   ใช้ร่วมกันทุกหน้า สี/ฟอนต์ของ Ant Design ตั้งไว้ใน app.vue
+   ========================================================= */
 
-.home-wrap {
-  min-height: 100vh;
-  background: radial-gradient(1200px 600px at 20% 0%, #eaf0ff 0%, transparent 60%),
-              radial-gradient(900px 500px at 90% 10%, #e7fff5 0%, transparent 55%),
-              #f5f6fb;
+:root {
+  /* surfaces */
+  --bg: #07050f;
+  --bg-2: #0c0918;
+  --surface: #110c20;
+  --surface-2: #171029;
+  --surface-3: #201636;
+  --border: rgba(167, 139, 250, 0.14);
+  --border-strong: rgba(167, 139, 250, 0.32);
+
+  /* text */
+  --text: #ede9fe;
+  --text-2: #a9a1c7;
+  --text-3: #6f6890;
+
+  /* brand */
+  --primary: #8b5cf6;
+  --primary-strong: #7c3aed;
+  --primary-soft: rgba(139, 92, 246, 0.14);
+  --lavender: #c4b5fd;
+  --accent: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, 0.1);
+
+  /* status */
+  --success: #34d399;
+  --danger: #f87171;
+  --warning: #fbbf24;
+
+  --grad-primary: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  --grad-text: linear-gradient(100deg, #ede9fe 0%, #c4b5fd 40%, #22d3ee 100%);
+  --grad-accent: linear-gradient(100deg, #67e8f9 0%, #22d3ee 60%, #06b6d4 100%);
+  --grad-edge: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.7), rgba(34, 211, 238, 0.7), transparent);
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.85);
+  --shadow-glow: 0 0 0 1px rgba(139, 92, 246, 0.35), 0 18px 50px -18px rgba(139, 92, 246, 0.6);
+  --glow-accent: 0 0 18px rgba(34, 211, 238, 0.35);
+
+  --font-sans: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Chakra Petch", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Sans Thai", ui-monospace, "SFMono-Regular", Consolas, monospace;
 }
 
-.home-container {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 32px 16px;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-/* Hero */
-.home-hero {
-  border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+html {
+  background: var(--bg);
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
 }
 
-.home-hero-inner {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.home-left {
-  min-width: 260px;
-}
-
-.home-title {
+body {
   margin: 0;
-  font-weight: 900;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-.home-subtitle {
-  font-size: 16px;
+::selection {
+  background: rgba(34, 211, 238, 0.35);
+  color: #fff;
 }
 
-.home-actions {
-  margin-top: 16px;
+a {
+  color: var(--lavender);
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.22);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- typography ---------- */
+.display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.15;
+  margin: 0;
+  color: var(--text);
+}
+
+/* ป้ายกำกับสไตล์โค้ด: // LABEL */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.eyebrow::before {
+  content: "//";
+  color: var(--text-3);
+  letter-spacing: 0;
+}
+
+.text-gradient {
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-accent {
+  color: var(--accent);
+  text-shadow: var(--glow-accent);
+}
+
+.muted {
+  color: var(--text-2);
+}
+.subtle {
+  color: var(--text-3);
+}
+.num,
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* จุดสถานะกระพริบ */
+.pulse-dot {
+  position: relative;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pulse-dot::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid var(--success);
+    animation: pulse-ring 1.8s ease-out infinite;
+  }
+}
+@keyframes pulse-ring {
+  from {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* ---------- layout helpers ---------- */
+.container {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.page {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.home-status {
-  margin-top: 14px;
+/* พื้นหลัง: ตารางกริด + แสงม่วง/ฟ้า */
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(800px 480px at 12% -8%, rgba(124, 58, 237, 0.26), transparent 60%),
+    radial-gradient(700px 420px at 100% 10%, rgba(34, 211, 238, 0.1), transparent 60%),
+    radial-gradient(900px 600px at 50% 120%, rgba(91, 33, 182, 0.2), transparent 60%);
+}
+.ambient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(167, 139, 250, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(167, 139, 250, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 20%, #000 30%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 20%, #000 30%, transparent 85%);
 }
 
-/* Right side */
-.home-right {
+/* ---------- surfaces: กรอบมีมุมแบบ HUD ---------- */
+.surface {
+  position: relative;
+  background: linear-gradient(180deg, rgba(167, 139, 250, 0.04), rgba(167, 139, 250, 0.01)), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.surface::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--lavender), var(--lavender)) top left / 12px 1px,
+    linear-gradient(var(--lavender), var(--lavender)) top left / 1px 12px,
+    linear-gradient(var(--accent), var(--accent)) bottom right / 12px 1px,
+    linear-gradient(var(--accent), var(--accent)) bottom right / 1px 12px;
+  background-repeat: no-repeat;
+  opacity: 0.55;
+}
+
+.surface-pad {
+  padding: 24px;
+}
+
+.surface-header {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.surface-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
 }
 
-.home-mini-card {
-  width: 260px;
-  border-radius: 16px !important;
+.hairline {
+  height: 1px;
+  background: var(--grad-edge);
+  border: 0;
+  margin: 0;
+  opacity: 0.6;
 }
 
-/* Bottom */
-.home-grid {
-  margin-top: 12px;
+/* ---------- small pieces ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  border: 1px solid var(--border-strong);
+  background: var(--primary-soft);
+  color: var(--lavender);
+  white-space: nowrap;
+}
+.chip-accent {
+  border-color: rgba(34, 211, 238, 0.4);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.chip-success {
+  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--success);
+}
+.chip-danger {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--danger);
+}
+.chip-muted {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-2);
 }
 
-.home-info-card {
-  border-radius: 16px !important;
+.icon-tile {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-size: 19px;
+  color: var(--accent);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(34, 211, 238, 0.08));
+  border: 1px solid var(--border-strong);
+  box-shadow: inset 0 0 12px rgba(139, 92, 246, 0.2);
 }
 
-.home-info-action {
-  margin-top: 12px;
+.points-plus {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
-.home-footer {
+.empty-block {
+  padding: 48px 16px;
   text-align: center;
-  opacity: .6;
-  margin-top: 18px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 
-/* Responsive */
-@media (max-width: 720px) {
-  .home-mini-card {
-    width: 100%;
+/* ---------- Ant Design refinements ---------- */
+.ant-btn {
+  font-weight: 500;
+  box-shadow: none;
+}
+.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous) {
+  background: var(--grad-primary);
+  border: 1px solid rgba(196, 181, 253, 0.45);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.25), 0 8px 24px -10px rgba(139, 92, 246, 0.9);
+}
+.ant-btn-primary:not(:disabled):not(.ant-btn-dangerous):hover {
+  background: var(--grad-primary);
+  filter: brightness(1.12);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.45), 0 0 24px rgba(139, 92, 246, 0.55);
+}
+.ant-btn-default:not(:disabled):hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+.ant-btn-lg {
+  height: 46px;
+  padding-inline: 22px;
+}
+
+.ant-input-affix-wrapper:focus-within,
+.ant-input:focus,
+.ant-input-number-focused,
+.ant-select-focused .ant-select-selector,
+.ant-picker-focused {
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35), 0 0 16px rgba(34, 211, 238, 0.12) !important;
+}
+
+.ant-table-wrapper .ant-table {
+  background: transparent;
+}
+.ant-table-wrapper .ant-table-thead > tr > th {
+  background: rgba(167, 139, 250, 0.04);
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ant-table-wrapper .ant-table-thead > tr > th::before {
+  display: none;
+}
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  border-bottom-color: var(--border);
+}
+.ant-table-wrapper .ant-table-tbody > tr:hover > td {
+  background: rgba(139, 92, 246, 0.07) !important;
+}
+
+.ant-modal .ant-modal-content,
+.ant-modal .ant-modal-header {
+  background: var(--surface-2);
+}
+.ant-modal .ant-modal-content {
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-glow);
+}
+.ant-modal .ant-modal-title,
+.ant-modal-confirm-title {
+  font-family: var(--font-display) !important;
+}
+
+.ant-segmented {
+  background: rgba(167, 139, 250, 0.04);
+  border: 1px solid var(--border);
+}
+.ant-segmented .ant-segmented-item-selected {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.ant-progress-bg {
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .fade-up {
+    animation: fade-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .fade-up-2 {
+    animation-delay: 0.08s;
+  }
+  .fade-up-3 {
+    animation-delay: 0.16s;
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+  .surface-pad {
+    padding: 18px;
+  }
+  .surface-header {
+    padding: 14px 18px;
   }
 }

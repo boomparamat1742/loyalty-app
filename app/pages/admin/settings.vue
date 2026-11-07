@@ -1,331 +1,226 @@
 <script setup>
-import { message } from "ant-design-vue";
 import {
-  SaveOutlined,
-  ReloadOutlined,
-  WarningOutlined,
   CheckCircleOutlined,
+  CloseCircleOutlined,
+  ReloadOutlined,
+  CrownOutlined,
+  DatabaseOutlined,
+  CloudDownloadOutlined,
 } from "@ant-design/icons-vue";
-import dayjs from "dayjs";
 
 definePageMeta({ layout: "admin" });
 
+// หน้านี้แสดงข้อมูลจริงของระบบ (อ่านอย่างเดียว)
+// กติกาแต้มกำหนดไว้ใน database: database/2026-11-07_secure_points.sql
 const supabase = useSupabase();
-const loading = ref(false);
-const systemInfo = ref({
-  uptimeStarted: new Date().toISOString(),
-  version: "1.0.0",
-  environment: "production",
-  database: "Connected",
-});
+const config = useRuntimeConfig();
 
-const settings = reactive({
-  maintenanceMode: false,
-  allowNewRegistrations: true,
-  maxPointsPerPurchase: 1000,
-  pointsExpiryDays: 365,
-  emailNotifications: true,
-  autoBackup: true,
-  backupFrequency: "daily",
-});
+const checking = ref(false);
+const status = ref({ ok: null, latency: 0, error: "" });
 
-const settingsLoading = ref(false);
-const isSaved = ref(false);
-
-onMounted(async () => {
-  await loadSettings();
-});
-
-const loadSettings = async () => {
+const projectHost = computed(() => {
   try {
-    settingsLoading.value = true;
-    // Simulate loading settings from database
-    // In a real app, you'd fetch from a settings table
-    isSaved.value = true;
-    setTimeout(() => {
-      isSaved.value = false;
-    }, 2000);
+    return new URL(config.public.supabaseUrl).host;
+  } catch {
+    return "-";
+  }
+});
+
+const checkConnection = async () => {
+  checking.value = true;
+  const started = performance.now();
+  try {
+    const { error } = await supabase.from("rewards").select("id", { count: "exact", head: true });
+    if (error) throw error;
+    status.value = { ok: true, latency: Math.round(performance.now() - started), error: "" };
   } catch (e) {
-    console.error(e);
-    message.error("Failed to load settings");
+    status.value = { ok: false, latency: 0, error: e?.message || "เชื่อมต่อไม่สำเร็จ" };
   } finally {
-    settingsLoading.value = false;
+    checking.value = false;
   }
 };
 
-const saveSettings = async () => {
-  try {
-    loading.value = true;
+onMounted(checkConnection);
 
-    // TODO: Save to database
-    // const { error } = await supabase
-    //   .from('system_settings')
-    //   .upsert(settings)
-
-    message.success("Settings saved successfully");
-    isSaved.value = true;
-    setTimeout(() => {
-      isSaved.value = false;
-    }, 3000);
-  } catch (e) {
-    console.error(e);
-    message.error(e?.message || "Failed to save settings");
-  } finally {
-    loading.value = false;
-  }
-};
-
-const getUptimeString = () => {
-  const start = dayjs(systemInfo.value.uptimeStarted);
-  const now = dayjs();
-  const duration = now.diff(start);
-  const days = Math.floor(duration / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  return `${days}d ${hours}h`;
-};
-
-const resetToDefaults = () => {
-  settings.maintenanceMode = false;
-  settings.allowNewRegistrations = true;
-  settings.maxPointsPerPurchase = 1000;
-  settings.pointsExpiryDays = 365;
-  settings.emailNotifications = true;
-  settings.autoBackup = true;
-  settings.backupFrequency = "daily";
-  message.info("Settings reset to defaults");
-};
+const rules = [
+  { label: "อัตราการได้แต้ม", value: "10 บาท = 1 แต้ม", note: "ปัดเศษลง คำนวณโดย database ทุกครั้ง" },
+  { label: "ลูกค้าบันทึกการซื้อเอง", value: "สูงสุด 10 รายการ / วัน", note: "นับตามวันในเวลาประเทศไทย" },
+  { label: "ยอดเงินต่อรายการ", value: "ไม่จำกัด", note: "ต้องมากกว่า 0 บาท" },
+  { label: "การแก้แต้มและสิทธิ์", value: "เฉพาะผู้ดูแลระบบ", note: "ลูกค้าแก้ไขแต้มหรือ role ของตัวเองไม่ได้" },
+];
 </script>
 
 <template>
-  <div class="settings-container">
-    <div class="settings-header">
-      <div>
-        <a-typography-title :level="3" style="margin: 0">
-          System Settings
-        </a-typography-title>
-        <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px">
-          Configure system-wide settings and preferences
-        </p>
-      </div>
+  <div class="page">
+    <PageHeader eyebrow="System" title="ข้อมูลระบบ" subtitle="สถานะการเชื่อมต่อ กติกาแต้ม และการสำรองข้อมูล" />
 
-      <a-space>
-        <a-button @click="loadSettings" :loading="settingsLoading" :icon="ReloadOutlined">
-          Reload
-        </a-button>
-        <a-button type="primary" @click="saveSettings" :loading="loading" :icon="SaveOutlined">
-          Save Changes
-        </a-button>
-      </a-space>
+    <div class="grid">
+      <section class="surface">
+        <div class="surface-header">
+          <h2 class="surface-title"><DatabaseOutlined /> การเชื่อมต่อฐานข้อมูล</h2>
+          <a-button size="small" :loading="checking" @click="checkConnection">
+            <template #icon><ReloadOutlined /></template> ตรวจสอบ
+          </a-button>
+        </div>
+        <div class="surface-pad status">
+          <div class="status-main">
+            <CheckCircleOutlined v-if="status.ok" class="ok" />
+            <CloseCircleOutlined v-else-if="status.ok === false" class="bad" />
+            <a-spin v-else size="small" />
+            <div>
+              <div class="status-title">
+                {{ status.ok ? "เชื่อมต่อปกติ" : status.ok === false ? "เชื่อมต่อไม่ได้" : "กำลังตรวจสอบ..." }}
+              </div>
+              <div class="subtle status-sub">
+                {{ status.ok ? `ตอบกลับใน ${status.latency} ms` : status.error }}
+              </div>
+            </div>
+          </div>
+          <dl class="kv">
+            <div><dt class="subtle">ผู้ให้บริการ</dt><dd>Supabase</dd></div>
+            <div><dt class="subtle">โปรเจกต์</dt><dd class="mono">{{ projectHost }}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="surface">
+        <div class="surface-header">
+          <h2 class="surface-title"><CloudDownloadOutlined /> การสำรองข้อมูล</h2>
+        </div>
+        <div class="surface-pad backup">
+          <p class="muted">
+            สำรองข้อมูลทั้งหมด (ตาราง ข้อมูลสมาชิก และรูปของรางวัล) ลงเครื่อง
+            ด้วยคำสั่งนี้ในโฟลเดอร์โปรเจกต์
+          </p>
+          <code class="cmd">bash scripts/backup-db.sh</code>
+          <p class="subtle small">ไฟล์จะอยู่ใน <span class="mono">backups/</span> แนะนำให้ทำอย่างน้อยสัปดาห์ละครั้ง และเก็บสำเนาไว้นอกเครื่อง</p>
+        </div>
+      </section>
     </div>
 
-    <!-- Status Alerts -->
-    <a-row :gutter="[16, 16]" style="margin-bottom: 24px">
-      <a-col :xs="24" :sm="12" :lg="6">
-        <a-statistic
-          title="System Status"
-          :value="systemInfo.database"
-          :value-style="{ color: '#22c55e' }"
-        >
-          <template #prefix>
-            <CheckCircleOutlined style="color: #22c55e" />
-          </template>
-        </a-statistic>
-      </a-col>
-      <a-col :xs="24" :sm="12" :lg="6">
-        <a-statistic
-          title="Uptime"
-          :value="getUptimeString()"
-          :value-style="{ color: '#3b82f6' }"
-        />
-      </a-col>
-      <a-col :xs="24" :sm="12" :lg="6">
-        <a-statistic
-          title="Version"
-          :value="systemInfo.version"
-          :value-style="{ color: '#9ca3af' }"
-        />
-      </a-col>
-      <a-col :xs="24" :sm="12" :lg="6">
-        <a-statistic
-          title="Environment"
-          :value="systemInfo.environment"
-          :value-style="{ color: '#a855f7' }"
-        />
-      </a-col>
-    </a-row>
-
-    <!-- Save Status -->
-    <a-alert
-      v-if="isSaved"
-      message="Settings have been saved successfully"
-      type="success"
-      show-icon
-      closable
-      style="margin-bottom: 24px"
-    />
-
-    <!-- Settings Sections -->
-    <a-row :gutter="[24, 24]">
-      <!-- System Settings -->
-      <a-col :xs="24" :lg="12">
-        <a-card title="System Settings" :bordered="false" style="border-radius: 12px; border: 1px solid #e5e7eb">
-          <a-form layout="vertical">
-            <a-form-item label="Maintenance Mode">
-              <a-switch v-model:checked="settings.maintenanceMode" />
-              <p style="color: #6b7280; font-size: 12px; margin-top: 8px">
-                When enabled, only admins can access the system
-              </p>
-            </a-form-item>
-
-            <a-form-item label="Allow New Registrations">
-              <a-switch v-model:checked="settings.allowNewRegistrations" />
-              <p style="color: #6b7280; font-size: 12px; margin-top: 8px">
-                Allow new users to register without admin approval
-              </p>
-            </a-form-item>
-
-            <a-form-item label="Maximum Points per Purchase">
-              <a-input-number
-                v-model:value="settings.maxPointsPerPurchase"
-                :min="1"
-                :max="10000"
-                style="width: 100%"
-              />
-              <p style="color: #6b7280; font-size: 12px; margin-top: 8px">
-                Maximum point value allowed per transaction
-              </p>
-            </a-form-item>
-
-            <a-form-item label="Points Expiry (days)">
-              <a-input-number
-                v-model:value="settings.pointsExpiryDays"
-                :min="1"
-                :max="3650"
-                style="width: 100%"
-              />
-              <p style="color: #6b7280; font-size: 12px; margin-top: 8px">
-                Days until unused points expire
-              </p>
-            </a-form-item>
-          </a-form>
-        </a-card>
-      </a-col>
-
-      <!-- Notification & Backup Settings -->
-      <a-col :xs="24" :lg="12">
-        <a-card title="Notifications & Backup" :bordered="false" style="border-radius: 12px; border: 1px solid #e5e7eb">
-          <a-form layout="vertical">
-            <a-form-item label="Email Notifications">
-              <a-switch v-model:checked="settings.emailNotifications" />
-              <p style="color: #6b7280; font-size: 12px; margin-top: 8px">
-                Send email notifications for important events
-              </p>
-            </a-form-item>
-
-            <a-form-item label="Automatic Backups">
-              <a-switch v-model:checked="settings.autoBackup" />
-              <p style="color: #6b7280; font-size: 12px; margin-top: 8px">
-                Automatically backup system data
-              </p>
-            </a-form-item>
-
-            <a-form-item label="Backup Frequency" v-if="settings.autoBackup">
-              <a-select v-model:value="settings.backupFrequency">
-                <a-select-option value="hourly">Hourly</a-select-option>
-                <a-select-option value="daily">Daily</a-select-option>
-                <a-select-option value="weekly">Weekly</a-select-option>
-                <a-select-option value="monthly">Monthly</a-select-option>
-              </a-select>
-            </a-form-item>
-
-            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e5e7eb">
-              <a-button danger @click="resetToDefaults">
-                <template #icon>
-                  <WarningOutlined />
-                </template>
-                Reset to Defaults
-              </a-button>
-              <p style="color: #ef4444; font-size: 12px; margin-top: 8px">
-                This will reset all settings to their default values
-              </p>
-            </div>
-          </a-form>
-        </a-card>
-      </a-col>
-    </a-row>
-
-    <!-- API & Security Section -->
-    <a-card 
-      title="API & Security" 
-      :bordered="false" 
-      style="border-radius: 12px; border: 1px solid #e5e7eb; margin-top: 24px"
-    >
-      <a-row :gutter="[24, 24]">
-        <a-col :xs="24" :md="12">
-          <div class="info-box">
-            <div class="info-label">API Rate Limit</div>
-            <div class="info-value">1000 requests/hour</div>
-            <p style="color: #6b7280; font-size: 12px; margin-top: 8px">
-              Maximum API requests per hour per IP
-            </p>
+    <section class="surface">
+      <div class="surface-header">
+        <h2 class="surface-title"><CrownOutlined /> กติกาแต้ม</h2>
+        <span class="subtle small">กำหนดใน database · แก้ไขผ่านหน้านี้ไม่ได้</span>
+      </div>
+      <ul class="rules">
+        <li v-for="r in rules" :key="r.label">
+          <div>
+            <div class="rule-label">{{ r.label }}</div>
+            <div class="subtle small">{{ r.note }}</div>
           </div>
-        </a-col>
-        <a-col :xs="24" :md="12">
-          <div class="info-box">
-            <div class="info-label">Session Timeout</div>
-            <div class="info-value">24 hours</div>
-            <p style="color: #6b7280; font-size: 12px; margin-top: 8px">
-              Automatic session expiration time
-            </p>
-          </div>
-        </a-col>
-      </a-row>
-    </a-card>
+          <span class="chip">{{ r.value }}</span>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.settings-container {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  padding: 24px;
-  min-height: 100vh;
-}
-
-.settings-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
 }
-
-.info-box {
-  padding: 16px;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+.surface-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-
-.info-label {
-  font-size: 12px;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.status-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.status-main .anticon {
+  font-size: 28px;
+}
+.ok {
+  color: var(--success);
+}
+.bad {
+  color: var(--danger);
+}
+.status-title {
   font-weight: 600;
 }
-
-.info-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-top: 8px;
+.status-sub,
+.small {
+  font-size: 13px;
+}
+.kv {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kv div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.kv dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.backup p {
+  margin: 0;
+}
+.cmd {
+  display: block;
+  margin: 14px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--lavender);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-x: auto;
+}
+.rules {
+  list-style: none;
+  margin: 0;
+  padding: 4px 24px;
+}
+.rules li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.rules li:last-child {
+  border-bottom: 0;
+}
+.rule-label {
+  font-weight: 500;
 }
 
-@media (max-width: 768px) {
-  .settings-header {
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 520px) {
+  .rules {
+    padding: 4px 18px;
+  }
+  .rules li {
     flex-direction: column;
     align-items: flex-start;
+    gap: 8px;
   }
 }
 </style>

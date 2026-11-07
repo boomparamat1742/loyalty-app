@@ -1,62 +1,48 @@
 <script setup>
 import dayjs from "dayjs";
-import { message, Modal } from "ant-design-vue";
 import {
-  UnlockOutlined,
   LockOutlined,
-  DeleteOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SearchOutlined,
   ClockCircleOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons-vue";
 
 definePageMeta({ layout: "admin" });
 
 const supabase = useSupabase();
+const auth = useAuthStore();
+const { message, modal } = useUi();
+
 const loading = ref(false);
+const saving = ref(false);
 const admins = ref([]);
-const q = ref("");
-const modalVisible = ref(false);
-const editingId = ref(null);
+const modalOpen = ref(false);
 
 const formData = reactive({
   email: "",
-  password: "",
 });
 
 const columns = [
-  { title: "Email", dataIndex: "email", key: "email", width: "40%" },
-  { title: "Status", dataIndex: "status", key: "status", width: "15%" },
-  { title: "Last Login", dataIndex: "last_login", key: "last_login", width: "20%" },
-  { title: "Created", dataIndex: "created_at", key: "created_at", width: "15%" },
-  { title: "Actions", key: "actions", width: "10%", align: "center" },
+  { title: "ผู้ดูแลระบบ", key: "email" },
+  { title: "สถานะ", key: "status", width: 140 },
+  { title: "เข้าสู่ระบบล่าสุด", key: "last_sign_in_at", width: 200 },
+  { title: "เพิ่มเมื่อ", key: "created_at", width: 150 },
+  { title: "", key: "actions", align: "right", width: 80 },
 ];
 
 const fetchAdmins = async () => {
   try {
     loading.value = true;
 
-    let query = supabase
-      .from("profiles")
-      .select("id,email,role,created_at,last_login")
-      .eq("role", "admin")
-      .order("created_at", { ascending: false });
-
-    if (q.value.trim()) {
-      query = query.ilike("email", `%${q.value.trim()}%`);
-    }
-
-    const { data, error } = await query;
+    // ดึงจากฟังก์ชันใน database เพราะเวลา login ล่าสุดอยู่ใน auth.users
+    const { data, error } = await supabase.rpc("admin_list_admins");
     if (error) throw error;
 
-    admins.value = (data || []).map((admin) => ({
-      ...admin,
-      status: admin.last_login ? "Active" : "Inactive",
-    }));
+    admins.value = data || [];
   } catch (e) {
     console.error(e);
-    message.error(e?.message || "Failed to load admins");
+    message.error(e?.message || "โหลดรายชื่อผู้ดูแลไม่สำเร็จ");
   } finally {
     loading.value = false;
   }
@@ -64,60 +50,72 @@ const fetchAdmins = async () => {
 
 onMounted(fetchAdmins);
 
-const formatDate = (date) => {
-  return date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "Never";
-};
+const fmtDate = (d) => (d ? dayjs(d).format("D MMM YYYY · HH:mm") : "ยังไม่เคยเข้าใช้");
+const isRecent = (d) => d && dayjs().diff(dayjs(d), "day") <= 30;
 
 const openAddModal = () => {
-  editingId.value = null;
   formData.email = "";
-  formData.password = "";
-  modalVisible.value = true;
+  modalOpen.value = true;
 };
 
+// เลื่อนสมาชิกที่สมัครไว้แล้วเป็น admin
+// (ไม่สร้างบัญชีใหม่ที่นี่ เพราะ signUp จะทำให้ admin ที่ใช้งานอยู่หลุดไปเป็นบัญชีใหม่)
 const handleAddAdmin = async () => {
-  if (!formData.email || !formData.password) {
-    message.error("Please fill in all fields");
+  const loginId = formData.email.trim().toLowerCase();
+  if (!loginId) {
+    message.error("กรุณากรอกชื่อผู้ใช้หรืออีเมล");
     return;
   }
 
   try {
-    loading.value = true;
+    saving.value = true;
 
-    // Create user with Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-    });
+    const { data: member, error: findError } = await supabase
+      .from("profiles")
+      .select("id,role")
+      .eq(loginId.includes("@") ? "email" : "username", loginId)
+      .maybeSingle();
 
-    if (authError) throw authError;
+    if (findError) throw findError;
+    if (!member) {
+      message.error("ไม่พบสมาชิกนี้ ให้สมัครสมาชิกก่อน");
+      return;
+    }
+    if (member.role === "admin") {
+      message.info("บัญชีนี้เป็นผู้ดูแลระบบอยู่แล้ว");
+      return;
+    }
 
-    // Update profile to admin role
     const { error: profileError } = await supabase
       .from("profiles")
       .update({ role: "admin" })
-      .eq("id", authData.user?.id);
+      .eq("id", member.id);
 
     if (profileError) throw profileError;
 
-    message.success("Admin user created successfully");
-    modalVisible.value = false;
+    message.success("เพิ่มผู้ดูแลระบบแล้ว");
+    modalOpen.value = false;
     await fetchAdmins();
   } catch (e) {
     console.error(e);
-    message.error(e?.message || "Failed to create admin");
+    message.error(e?.message || "เพิ่มผู้ดูแลไม่สำเร็จ");
   } finally {
-    loading.value = false;
+    saving.value = false;
   }
 };
 
 const revokeAdminAccess = (record) => {
-  Modal.confirm({
-    title: "Revoke Admin Access",
-    content: `Remove admin privileges from ${record.email}?`,
-    okText: "Revoke",
+  if (record.id === auth.user?.id) {
+    message.warning("ไม่สามารถถอดสิทธิ์ของตัวเองได้");
+    return;
+  }
+
+  modal.confirm({
+    title: "ถอดสิทธิ์ผู้ดูแลระบบ?",
+    content: `${memberLabel(record)} จะกลับเป็นลูกค้าทั่วไป`,
+    okText: "ถอดสิทธิ์",
     okType: "danger",
-    cancelText: "Cancel",
+    cancelText: "ยกเลิก",
     async onOk() {
       try {
         const { error } = await supabase
@@ -127,37 +125,11 @@ const revokeAdminAccess = (record) => {
 
         if (error) throw error;
 
-        message.success("Admin access revoked");
+        message.success("ถอดสิทธิ์แล้ว");
         await fetchAdmins();
       } catch (e) {
         console.error(e);
-        message.error(e?.message || "Failed to revoke access");
-      }
-    },
-  });
-};
-
-const deleteAdmin = (record) => {
-  Modal.confirm({
-    title: "Delete Admin",
-    content: `Delete admin user ${record.email}? This action cannot be undone.`,
-    okText: "Delete",
-    okType: "danger",
-    cancelText: "Cancel",
-    async onOk() {
-      try {
-        const { error } = await supabase
-          .from("profiles")
-          .delete()
-          .eq("id", record.id);
-
-        if (error) throw error;
-
-        message.success("Admin user deleted");
-        await fetchAdmins();
-      } catch (e) {
-        console.error(e);
-        message.error(e?.message || "Failed to delete admin");
+        message.error(e?.message || "ถอดสิทธิ์ไม่สำเร็จ");
       }
     },
   });
@@ -165,157 +137,124 @@ const deleteAdmin = (record) => {
 </script>
 
 <template>
-  <div class="management-container">
-    <div class="management-header">
-      <div>
-        <a-typography-title :level="3" style="margin: 0">
-          Admin Management
-        </a-typography-title>
-        <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px">
-          Manage administrator accounts and permissions
-        </p>
-      </div>
-
-      <a-space>
-        <a-input
-          v-model:value="q"
-          placeholder="Search by email..."
-          style="width: 240px"
-          :prefix-icon="SearchOutlined"
-          allowClear
-          @pressEnter="fetchAdmins"
-        />
-        <a-button @click="fetchAdmins" :loading="loading" :icon="ReloadOutlined">
-          Refresh
+  <div class="page">
+    <PageHeader eyebrow="Access control" title="ผู้ดูแลระบบ" subtitle="บัญชีที่เข้าถึงหน้าจัดการทั้งหมดได้">
+      <template #actions>
+        <a-button :loading="loading" @click="fetchAdmins">
+          <template #icon><ReloadOutlined /></template> รีเฟรช
         </a-button>
-        <a-button type="primary" @click="openAddModal" :icon="PlusOutlined">
-          Add Admin
+        <a-button type="primary" @click="openAddModal">
+          <template #icon><PlusOutlined /></template> เพิ่มผู้ดูแล
         </a-button>
-      </a-space>
-    </div>
+      </template>
+    </PageHeader>
 
-    <!-- Admin List Card -->
-    <a-card 
-      style="border-radius: 12px; border: 1px solid #e5e7eb" 
-      :bordered="false"
-      :loading="loading"
-    >
-      <a-table 
-        :columns="columns" 
-        :dataSource="admins" 
+    <section class="surface">
+      <a-table
+        :dataSource="admins"
+        :columns="columns"
         rowKey="id"
-        :pagination="{ pageSize: 10, total: admins.length }"
-        size="middle"
+        :loading="loading"
+        :pagination="{ pageSize: 10, hideOnSinglePage: true }"
+        :scroll="{ x: 680 }"
       >
-        <!-- Status Column -->
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'status'">
-            <a-tag :color="record.status === 'Active' ? 'success' : 'default'">
-              {{ record.status }}
-            </a-tag>
-          </template>
-
-          <!-- Last Login Column -->
-          <template v-else-if="column.key === 'last_login'">
-            <div style="display: flex; align-items: center; gap: 6px">
-              <ClockCircleOutlined style="color: #9ca3af" />
-              {{ formatDate(record.last_login) }}
+          <template v-if="column.key === 'email'">
+            <div class="member">
+              <span class="avatar">{{ (memberLabel(record) || "?").charAt(0).toUpperCase() }}</span>
+              <span class="member-email">{{ memberLabel(record) }}</span>
+              <span v-if="record.id === auth.user?.id" class="chip chip-muted">คุณ</span>
             </div>
           </template>
 
-          <!-- Created Column -->
-          <template v-else-if="column.key === 'created_at'">
-            {{ formatDate(record.created_at) }}
+          <template v-else-if="column.key === 'status'">
+            <span class="chip" :class="isRecent(record.last_sign_in_at) ? 'chip-success' : 'chip-muted'">
+              {{ isRecent(record.last_sign_in_at) ? "ใช้งานอยู่" : "ไม่ได้ใช้งาน" }}
+            </span>
           </template>
 
-          <!-- Actions Column -->
+          <template v-else-if="column.key === 'last_sign_in_at'">
+            <span class="muted"><ClockCircleOutlined /> {{ fmtDate(record.last_sign_in_at) }}</span>
+          </template>
+
+          <template v-else-if="column.key === 'created_at'">
+            <span class="muted">{{ dayjs(record.created_at).format("D MMM YYYY") }}</span>
+          </template>
+
           <template v-else-if="column.key === 'actions'">
-            <a-space>
-              <a-tooltip title="Revoke Admin Access">
-                <a-button
-                  type="text"
-                  danger
-                  size="small"
-                  :icon="LockOutlined"
-                  @click="revokeAdminAccess(record)"
-                />
-              </a-tooltip>
-              <a-tooltip title="Delete User">
-                <a-button
-                  type="text"
-                  danger
-                  size="small"
-                  :icon="DeleteOutlined"
-                  @click="deleteAdmin(record)"
-                />
-              </a-tooltip>
-            </a-space>
+            <a-tooltip title="ถอดสิทธิ์ผู้ดูแล">
+              <a-button
+                type="text"
+                danger
+                aria-label="ถอดสิทธิ์ผู้ดูแล"
+                :disabled="record.id === auth.user?.id"
+                @click="revokeAdminAccess(record)"
+              >
+                <template #icon><LockOutlined /></template>
+              </a-button>
+            </a-tooltip>
           </template>
         </template>
       </a-table>
-    </a-card>
+    </section>
 
-    <!-- Add Admin Modal -->
     <a-modal
-      v-model:visible="modalVisible"
-      title="Add New Admin"
+      v-model:open="modalOpen"
+      title="เพิ่มผู้ดูแลระบบ"
+      okText="ให้สิทธิ์ผู้ดูแล"
+      cancelText="ยกเลิก"
+      :confirmLoading="saving"
       @ok="handleAddAdmin"
-      @cancel="modalVisible = false"
-      okText="Create"
-      cancelText="Cancel"
     >
-      <a-form layout="vertical">
-        <a-form-item label="Email Address">
-          <a-input
-            v-model:value="formData.email"
-            type="email"
-            placeholder="admin@example.com"
-            size="large"
-          />
+      <a-form layout="vertical" @submit.prevent="handleAddAdmin">
+        <a-form-item label="ชื่อผู้ใช้ หรือ อีเมลของสมาชิก">
+          <a-input v-model:value="formData.email" size="large" autocapitalize="none" placeholder="username หรือ member@example.com" />
         </a-form-item>
-
-        <a-form-item label="Password">
-          <a-input
-            v-model:value="formData.password"
-            type="password"
-            placeholder="Enter secure password"
-            size="large"
-          />
-        </a-form-item>
-
-        <a-alert
-          message="New admin will have full access to the system"
-          type="info"
-          show-icon
-          style="margin-top: 16px"
-        />
       </a-form>
+      <div class="notice">
+        <InfoCircleOutlined />
+        <span>บุคคลนั้นต้องสมัครสมาชิกก่อน และจะเข้าถึงหน้าจัดการทั้งหมดได้หลังได้รับสิทธิ์</span>
+      </div>
     </a-modal>
   </div>
 </template>
 
 <style scoped>
-.management-container {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  padding: 24px;
-  min-height: 100vh;
-  min-height: 100vh;
-  border-radius: 8px;
-}
-
-.management-header {
+.member {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
-
-@media (max-width: 768px) {
-  .management-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--grad-primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+}
+.member-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notice {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--text-2);
+  background: var(--primary-soft);
+  border: 1px solid var(--border-strong);
+}
+.notice :deep(.anticon) {
+  margin-top: 3px;
+  color: var(--lavender);
 }
 </style>

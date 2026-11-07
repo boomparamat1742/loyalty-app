@@ -1,39 +1,38 @@
 <script setup>
-import { message } from "ant-design-vue";
-import {
-  UserOutlined,
-  DollarOutlined,
-  EditOutlined,
-  CalendarOutlined,
-} from "@ant-design/icons-vue";
+import dayjs from "dayjs";
+import { ArrowLeftOutlined, UserOutlined } from "@ant-design/icons-vue";
 
 definePageMeta({ layout: "admin" });
 
 const supabase = useSupabase();
 const router = useRouter();
+const { message } = useUi();
+
 const loading = ref(false);
 const customers = ref([]);
 const loadingCustomers = ref(false);
 
 const POINT_RATE = 10;
+// แสดงผลล่วงหน้าเท่านั้น database คำนวณแต้มจริงตอนบันทึก
 const calcPoints = (amount) => Math.floor((Number(amount) || 0) / POINT_RATE);
 
 const form = reactive({
   customer_id: null,
   amount: null,
   note: "",
-  sold_at: new Date().toISOString().split("T")[0], // Default วันนี้
+  sold_at: dayjs().format("YYYY-MM-DD"),
 });
 
-// โหลดรายชื่อลูกค้า
+const selectedCustomer = computed(() => customers.value.find((c) => c.id === form.customer_id));
+
 const loadCustomers = async () => {
   try {
     loadingCustomers.value = true;
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, role")
-      .eq("role", "customer") // กรองเฉพาะลูกค้า
-      .order("email", { ascending: true });
+      .select("id, email, username, role, points")
+      .eq("role", "customer")
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     customers.value = data || [];
@@ -46,6 +45,9 @@ const loadCustomers = async () => {
 
 onMounted(loadCustomers);
 
+const filterOption = (input, option) =>
+  String(option?.label || "").toLowerCase().includes(input.toLowerCase());
+
 const save = async () => {
   if (!form.customer_id) return message.warning("กรุณาเลือกลูกค้า");
   if (!form.amount || form.amount <= 0)
@@ -53,9 +55,14 @@ const save = async () => {
 
   try {
     loading.value = true;
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    // ใช้วันที่ที่เลือก + เวลาปัจจุบัน
+    const now = dayjs();
+    const soldAt = dayjs(form.sold_at).hour(now.hour()).minute(now.minute()).second(now.second());
 
     const payload = {
       customer_id: form.customer_id,
@@ -63,7 +70,7 @@ const save = async () => {
       points_earned: calcPoints(form.amount),
       note: form.note?.trim() || null,
       created_by: user.id,
-      created_at: form.sold_at, // ใช้ค่าจาก DatePicker
+      created_at: soldAt.toISOString(),
     };
 
     const { error } = await supabase.from("sales").insert(payload);
@@ -80,323 +87,179 @@ const save = async () => {
 </script>
 
 <template>
-  <div class="new-sale-page">
-    <div class="bg-aura aura-purple"></div>
-    <div class="bg-aura aura-blue"></div>
+  <div class="page">
+    <PageHeader eyebrow="New sale" title="บันทึกยอดขาย" subtitle="เพิ่มยอดขายให้ลูกค้า ระบบจะเพิ่มแต้มเข้าบัญชีลูกค้าอัตโนมัติ">
+      <template #actions>
+        <a-button @click="router.back()"><template #icon><ArrowLeftOutlined /></template> ย้อนกลับ</a-button>
+      </template>
+    </PageHeader>
 
-    <div class="form-shell">
-      <div class="header-section">
-        <a-button class="btn-back" @click="$router.back()" shape="circle">
-          <template #icon><ArrowLeftOutlined /></template>
-        </a-button>
-        <div class="header-text">
-          <h2 class="title">NEW TRANSACTION</h2>
-          <p class="subtitle">ระบบบันทึกยอดขายและคำนวณแต้มอัจฉริยะ</p>
-        </div>
-      </div>
-
-      <a-card class="glass-form-card" :bordered="false">
-        <a-form layout="vertical" class="premium-form">
-          <div class="form-group-label"><UserOutlined /> ข้อมูลลูกค้า</div>
-          <a-form-item label="ระบุอีเมลลูกค้า">
+    <div class="layout">
+      <section class="surface surface-pad">
+        <a-form layout="vertical" requiredMark="optional" @finish="save">
+          <a-form-item label="ลูกค้า" required>
             <a-select
               v-model:value="form.customer_id"
               show-search
-              placeholder="ค้นหาลูกค้า..."
+              size="large"
+              placeholder="ค้นหาด้วยอีเมลลูกค้า"
               :loading="loadingCustomers"
-              class="premium-select"
+              :filter-option="filterOption"
+              :options="customers.map((c) => ({ value: c.id, label: memberLabel(c) }))"
             >
-              <template #suffixIcon><SearchOutlined /></template>
-              <a-select-option v-for="c in customers" :key="c.id" :value="c.id">
-                <div class="customer-option">
-                  <UserOutlined /> <span>{{ c.email }}</span>
-                </div>
-              </a-select-option>
+              <template #suffixIcon><UserOutlined /></template>
             </a-select>
           </a-form-item>
 
-          <div class="form-group-label">
-            <DollarOutlined /> รายละเอียดการขาย
-          </div>
-          <a-row :gutter="20">
-            <a-col :xs="24" :sm="12">
-              <a-form-item label="วันที่ทำรายการ">
-                <a-date-picker
-                  v-model:value="form.sold_at"
-                  valueFormat="YYYY-MM-DD"
-                  class="premium-input"
-                  style="width: 100%"
-                />
-              </a-form-item>
-            </a-col>
-            <a-col :xs="24" :sm="12">
-              <a-form-item label="ยอดขายรวม (บาท)">
-                <a-input-number
-                  v-model:value="form.amount"
-                  class="premium-input-number"
-                  :min="0"
-                  :step="10"
-                  placeholder="0.00"
-                  style="width: 100%"
-                  :formatter="
-                    (value) =>
-                      `฿ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                  "
-                  :parser="(value) => value.replace(/\฿\s?|(,*)/g, '')"
-                />
-              </a-form-item>
-            </a-col>
-          </a-row>
+          <div class="row">
+            <a-form-item label="วันที่ขาย" required>
+              <a-date-picker
+                v-model:value="form.sold_at"
+                valueFormat="YYYY-MM-DD"
+                format="D MMM YYYY"
+                size="large"
+                :allowClear="false"
+                style="width: 100%"
+              />
+            </a-form-item>
 
-          <div
-            class="calculator-panel"
-            :class="{ 'has-value': form.amount > 0 }"
-          >
-            <div class="calc-glow"></div>
-            <div class="calc-content">
-              <span class="calc-label">ESTIMATED REWARD</span>
-              <div class="calc-main">
-                <span class="calc-num">{{ calcPoints(form.amount) }}</span>
-                <span class="calc-unit">PTS</span>
-              </div>
-              <div class="calc-footer">10 THB = 1 POINT SYSTEM</div>
-            </div>
+            <a-form-item label="ยอดขาย (บาท)" required>
+              <a-input-number
+                v-model:value="form.amount"
+                size="large"
+                :min="0"
+                :precision="2"
+                style="width: 100%"
+                placeholder="0.00"
+                :formatter="(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')"
+                :parser="(value) => value.replace(/,/g, '')"
+              >
+                <template #prefix><span class="subtle">฿</span></template>
+              </a-input-number>
+            </a-form-item>
           </div>
 
-          <a-form-item label="บันทึกช่วยจำ (Notes)">
+          <a-form-item label="รายการสินค้า / หมายเหตุ">
             <a-textarea
               v-model:value="form.note"
-              placeholder="เช่น ฟิล์มม่วง iPhone 15 Pro Max..."
+              placeholder="เช่น ฟิล์มม่วง iPhone 15 Pro Max"
               :rows="3"
-              class="premium-input-area"
+              :maxlength="200"
+              show-count
             />
           </a-form-item>
 
-          <div class="action-footer">
-            <a-button
-              type="primary"
-              class="btn-save-sale"
-              :loading="loading"
-              @click="save"
-              block
-            >
-              <template #icon><ThunderboltFilled /></template>
+          <div class="form-actions">
+            <a-button size="large" @click="router.back()">ยกเลิก</a-button>
+            <a-button type="primary" size="large" html-type="submit" :loading="loading">
               บันทึกยอดขาย
             </a-button>
           </div>
         </a-form>
-      </a-card>
+      </section>
+
+      <aside class="summary">
+        <div class="summary-card">
+          <span class="eyebrow">ลูกค้าจะได้รับ</span>
+          <div class="summary-points num">+{{ calcPoints(form.amount).toLocaleString() }} <span>แต้ม</span></div>
+          <div class="hairline"></div>
+          <dl>
+            <div>
+              <dt class="subtle">ลูกค้า</dt>
+              <dd>{{ memberLabel(selectedCustomer) || "—" }}</dd>
+            </div>
+            <div>
+              <dt class="subtle">แต้มปัจจุบัน</dt>
+              <dd class="num">{{ selectedCustomer ? Number(selectedCustomer.points || 0).toLocaleString() : "—" }}</dd>
+            </div>
+            <div>
+              <dt class="subtle">อัตรา</dt>
+              <dd>10 บาท = 1 แต้ม</dd>
+            </div>
+          </dl>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
+
 <style scoped>
-/* ===== 🌌 Layout & Dark Theme Background ===== */
-.new-sale-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  padding: 60px 20px;
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  gap: 24px;
+  align-items: start;
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.form-actions {
   display: flex;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+  justify-content: flex-end;
+  gap: 12px;
 }
-
-.bg-aura {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.08;
-  z-index: 0;
-}
-.aura-purple {
-  top: -100px;
-  right: -100px;
-  background: #3b82f6;
-}
-.aura-blue {
-  bottom: -100px;
-  left: -100px;
-  background: #60a5fa;
-}
-
-.form-shell {
-  width: 100%;
-  max-width: 600px;
-  z-index: 1;
-}
-
-/* ===== 🏷️ Header Style ===== */
-.header-section {
+.summary-card {
+  position: sticky;
+  top: 24px;
+  padding: 26px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background:
+    linear-gradient(rgba(167, 139, 250, 0.07) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgba(167, 139, 250, 0.07) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(400px 220px at 100% 0%, rgba(34, 211, 238, 0.16), transparent 70%),
+    linear-gradient(160deg, #1f0f45, #0f0a1f);
+  box-shadow: var(--shadow-glow);
   display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 40px;
+  flex-direction: column;
+  gap: 14px;
 }
-.btn-back {
-  background: rgba(30, 41, 59, 0.6) !important;
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
-  color: #e0e7ff !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.btn-back:hover {
-  background: rgba(59, 130, 246, 0.1) !important;
-  border-color: #3b82f6 !important;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-.title {
-  color: #e0e7ff !important;
-  margin: 0 !important;
-  font-weight: 900;
-  font-size: 28px;
-  letter-spacing: 2px;
-}
-.subtitle {
-  color: #94a3b8;
-  margin: 0;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* ===== 💎 Glassmorphism Card ===== */
-.glass-form-card {
-  background: rgba(30, 41, 59, 0.8) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(59, 130, 246, 0.2) !important;
-  border-radius: 20px !important;
-  padding: 32px;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
-}
-
-.form-group-label {
-  color: #60a5fa;
-  font-weight: 700;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin: 25px 0 15px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* ===== ⌨️ Premium Inputs ===== */
-:deep(.ant-form-item-label > label) {
-  color: #e0e7ff !important;
+.summary-points {
+  font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 14px;
+  text-shadow: var(--glow-accent);
+  font-size: 48px;
+  line-height: 1;
+  color: var(--accent);
 }
-
-.premium-input,
-.premium-select :deep(.ant-select-selector),
-.premium-input-number,
-.premium-input-area {
-  background: rgba(15, 23, 42, 0.5) !important;
-  border: 1px solid rgba(59, 130, 246, 0.3) !important;
-  border-radius: 12px !important;
-  color: #e0e7ff !important;
-  min-height: 50px !important;
-  transition: all 0.3s ease !important;
+.summary-points span {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--text-2);
 }
-
-/* ปรับสีตัวเลขใน InputNumber */
-:deep(.ant-input-number-input),
-:deep(.ant-select-selection-item),
-:deep(.ant-picker-input > input) {
-  color: #e0e7ff !important;
-  font-weight: 600 !important;
-}
-
-.premium-input:hover,
-.premium-select:hover :deep(.ant-select-selector),
-.premium-input-number:hover {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
-}
-
-/* ===== 🔋 Calculator Panel (High-Tech Display) ===== */
-.calculator-panel {
-  position: relative;
-  background: rgba(59, 130, 246, 0.1);
-  border-radius: 16px;
-  padding: 30px;
-  margin: 30px 0;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  overflow: hidden;
-  transition: all 0.5s ease;
-}
-.calculator-panel.has-value {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.5);
-  transform: translateY(-5px);
-  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
-}
-.calc-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100px;
-  height: 100px;
-  background: #3b82f6;
-  filter: blur(60px);
-  opacity: 0.15;
-  transform: translate(-50%, -50%);
-}
-.calc-content {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-}
-.calc-label {
-  color: #60a5fa;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 3px;
-}
-.calc-main {
-  margin: 10px 0;
+dl {
+  margin: 0;
   display: flex;
-  align-items: baseline;
-  justify-content: center;
+  flex-direction: column;
   gap: 10px;
 }
-.calc-num {
-  color: #60a5fa;
-  font-size: 56px;
-  font-weight: 900;
-  line-height: 1;
+dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
-.calc-unit {
-  color: #3b82f6;
-  font-size: 16px;
-  font-weight: 700;
-}
-.calc-footer {
-  color: #64748b;
-  font-size: 10px;
-  letter-spacing: 1px;
+dd {
+  margin: 0;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ===== ⚡ Action Button (Gradient) ===== */
-.btn-save-sale {
-  height: 48px !important;
-  border-radius: 12px !important;
-  font-weight: 700 !important;
-  font-size: 16px !important;
-  letter-spacing: 1px !important;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-  border: none !important;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3) !important;
-  transition: all 0.3s ease !important;
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .summary {
+    order: -1;
+  }
 }
-.btn-save-sale:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.4) !important;
-}
-.btn-save-sale:active {
-  transform: scale(0.98);
+@media (max-width: 520px) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
 </style>

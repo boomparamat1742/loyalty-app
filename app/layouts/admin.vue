@@ -1,307 +1,292 @@
 <script setup>
-import { message } from "ant-design-vue"
 import {
   DashboardOutlined,
-  ShoppingCartOutlined,
+  LineChartOutlined,
   GiftOutlined,
   TeamOutlined,
-  LogoutOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
+  SafetyOutlined,
   SettingOutlined,
+  LogoutOutlined,
+  MenuOutlined,
 } from "@ant-design/icons-vue"
 
-const supabase = useSupabase()
-const route = useRoute()
+// การตรวจสิทธิ์ admin อยู่ใน middleware/auth.global.js
 const auth = useAuthStore()
+const route = useRoute()
+const drawerOpen = ref(false)
 
-const selected = computed(() => route.path)
-const collapsed = ref(false)
+const groups = [
+  {
+    label: "ภาพรวม",
+    items: [
+      { to: "/admin", label: "แดชบอร์ด", icon: DashboardOutlined, exact: true },
+      { to: "/admin/sales", label: "ยอดขาย", icon: LineChartOutlined },
+      { to: "/admin/rewards", label: "ของรางวัล", icon: GiftOutlined },
+      { to: "/admin/users", label: "สมาชิก", icon: TeamOutlined },
+    ],
+  },
+  {
+    label: "ระบบ",
+    items: [
+      { to: "/admin/management", label: "ผู้ดูแลระบบ", icon: SafetyOutlined },
+      { to: "/admin/settings", label: "ข้อมูลระบบ", icon: SettingOutlined },
+    ],
+  },
+]
 
-const userEmail = computed(() => auth.profile?.email || auth.user?.email || "")
-const loadingUser = computed(() => !auth.loaded)
+const isActive = (item) => (item.exact ? route.path === item.to : route.path.startsWith(item.to))
+const email = computed(() => memberLabel(auth.profile, auth.user?.email))
+const initial = computed(() => (email.value || "A").charAt(0).toUpperCase())
 
-onMounted(async () => {
-  // ✅ บังคับโหลด session + profile ก่อน
-  if (!auth.loaded) await auth.load()
-
-  // ✅ ถ้าไม่ login -> ไป login
-  if (!auth.user) return navigateTo("/auth/login")
-
-  // ✅ ถ้าไม่ใช่ admin -> ไป customer
-  if (auth.profile?.role !== "admin") return navigateTo("/customer")
-})
-
-const logout = async () => {
-  await auth.logout()
-  message.success("ออกจากระบบแล้ว")
-  navigateTo("/auth/login")
-}
-
-const toggleSidebar = () => {
-  collapsed.value = !collapsed.value
-}
+watch(() => route.path, () => (drawerOpen.value = false))
 </script>
 
-
 <template>
-  <a-layout style="min-height: 100vh; background: #f5f5f5">
-    <!-- Sidebar -->
-    <a-layout-sider 
-      :width="220" 
-      :collapsed="collapsed"
-      :collapsedWidth="80"
-      collapsible
-      style="background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06)"
-    >
-      <div class="logo-section">
-        <div v-if="!collapsed" class="logo-text">Loyalty Admin</div>
-        <div v-else class="logo-icon">A</div>
-      </div>
+  <div class="console">
+    <div class="ambient" aria-hidden="true"></div>
 
-      <a-menu 
-        mode="inline" 
-        :selectedKeys="[selected]"
-        :inlineCollapsed="collapsed"
-        :inlineIndent="16"
-      >
-        <a-menu-item key="/admin">
-          <template #icon>
-            <DashboardOutlined />
-          </template>
-          <NuxtLink to="/admin" style="text-decoration: none">
-            Dashboard
+    <aside class="sidebar">
+      <div class="sidebar-brand"><BrandMark to="/admin" caption="Admin Console" /></div>
+
+      <nav class="sidebar-nav" aria-label="เมนูผู้ดูแล">
+        <div v-for="g in groups" :key="g.label" class="nav-group">
+          <div class="nav-group-label">{{ g.label }}</div>
+          <NuxtLink
+            v-for="item in g.items"
+            :key="item.to"
+            :to="item.to"
+            class="nav-item"
+            :class="{ active: isActive(item) }"
+          >
+            <component :is="item.icon" class="nav-icon" />
+            <span>{{ item.label }}</span>
           </NuxtLink>
-        </a-menu-item>
-
-        <a-menu-item key="/admin/sales">
-          <template #icon>
-            <ShoppingCartOutlined />
-          </template>
-          <NuxtLink to="/admin/sales" style="text-decoration: none">
-            Sales Analytics
-          </NuxtLink>
-        </a-menu-item>
-
-        <a-menu-item key="/admin/rewards">
-          <template #icon>
-            <GiftOutlined />
-          </template>
-          <NuxtLink to="/admin/rewards" style="text-decoration: none">
-            Rewards
-          </NuxtLink>
-        </a-menu-item>
-
-        <a-menu-item key="/admin/users">
-          <template #icon>
-            <TeamOutlined />
-          </template>
-          <NuxtLink to="/admin/users" style="text-decoration: none">
-            Users
-          </NuxtLink>
-        </a-menu-item>
-
-        <a-divider style="margin: 8px 0" />
-
-        <a-menu-item key="/admin/management">
-          <template #icon>
-            <SettingOutlined />
-          </template>
-          <NuxtLink to="/admin/management" style="text-decoration: none">
-            Admin Management
-          </NuxtLink>
-        </a-menu-item>
-
-        <a-menu-item key="/admin/settings">
-          <template #icon>
-            <SettingOutlined />
-          </template>
-          <NuxtLink to="/admin/settings" style="text-decoration: none">
-            Settings
-          </NuxtLink>
-        </a-menu-item>
-      </a-menu>
-    </a-layout-sider>
-
-    <a-layout>
-      <!-- Header -->
-      <a-layout-header class="admin-header">
-        <div class="header-left">
-          <a-button 
-            type="text" 
-            :icon="collapsed ? MenuUnfoldOutlined : MenuFoldOutlined"
-            @click="toggleSidebar"
-            class="toggle-button"
-          />
-          <span class="page-breadcrumb">{{ route.meta.title || 'Admin' }}</span>
         </div>
+      </nav>
 
-        <a-space class="header-right">
-          <div class="user-status">
-            <span v-if="!loadingUser && userEmail" class="user-email">
-              {{ userEmail }}
-            </span>
-            <div class="status-dot"></div>
-          </div>
+      <div class="sidebar-user">
+        <div class="user-avatar">{{ initial }}</div>
+        <div class="user-meta">
+          <div class="user-email" :title="email">{{ email }}</div>
+          <div class="user-role">ผู้ดูแลระบบ</div>
+        </div>
+        <a-tooltip title="ออกจากระบบ">
+          <a-button type="text" class="user-logout" aria-label="ออกจากระบบ" @click="auth.logout()">
+            <LogoutOutlined />
+          </a-button>
+        </a-tooltip>
+      </div>
+    </aside>
 
-          <a-dropdown>
-            <template #overlay>
-              <a-menu @click="logout">
-                <a-menu-item key="logout">
-                  <template #icon>
-                    <LogoutOutlined />
-                  </template>
-                  Logout
-                </a-menu-item>
-              </a-menu>
-            </template>
-            <a-button type="text" class="user-menu-button">
-              <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #3b82f6, #a855f7); display: grid; place-items: center; color: #fff; font-size: 14px; font-weight: 600">
-                {{ userEmail?.charAt(0).toUpperCase() || 'U' }}
-              </div>
-            </a-button>
-          </a-dropdown>
-        </a-space>
-      </a-layout-header>
+    <div class="console-body">
+      <header class="mobile-bar">
+        <a-button type="text" aria-label="เปิดเมนู" @click="drawerOpen = true"><MenuOutlined /></a-button>
+        <BrandMark to="/admin" caption="Admin Console" />
+        <span />
+      </header>
 
-      <!-- Content -->
-      <a-layout-content class="admin-content">
+      <main class="console-main">
         <slot />
-      </a-layout-content>
-    </a-layout>
-  </a-layout>
+      </main>
+    </div>
+
+    <a-drawer
+      v-model:open="drawerOpen"
+      placement="left"
+      :width="280"
+      :closable="false"
+      :body-style="{ padding: 0, background: 'var(--bg-2)' }"
+    >
+      <div class="drawer">
+        <div class="sidebar-brand"><BrandMark to="/admin" caption="Admin Console" /></div>
+        <nav class="sidebar-nav">
+          <div v-for="g in groups" :key="g.label" class="nav-group">
+            <div class="nav-group-label">{{ g.label }}</div>
+            <NuxtLink
+              v-for="item in g.items"
+              :key="item.to"
+              :to="item.to"
+              class="nav-item"
+              :class="{ active: isActive(item) }"
+            >
+              <component :is="item.icon" class="nav-icon" />
+              <span>{{ item.label }}</span>
+            </NuxtLink>
+          </div>
+        </nav>
+        <div class="sidebar-user">
+          <div class="user-avatar">{{ initial }}</div>
+          <div class="user-meta">
+            <div class="user-email">{{ email }}</div>
+            <div class="user-role">ผู้ดูแลระบบ</div>
+          </div>
+          <a-button type="text" class="user-logout" aria-label="ออกจากระบบ" @click="auth.logout()">
+            <LogoutOutlined />
+          </a-button>
+        </div>
+      </div>
+    </a-drawer>
+  </div>
 </template>
 
 <style scoped>
-.logo-section {
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
+.console {
+  position: relative;
+  min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 64px;
 }
-
-.logo-text {
-  font-weight: 800;
-  font-size: 16px;
-  color: #1f2937;
-  letter-spacing: -0.5px;
-}
-
-.logo-icon {
-  font-weight: 800;
-  font-size: 20px;
-  color: #3b82f6;
-}
-
-:deep(.ant-menu) {
-  border-right: none;
-}
-
-:deep(.ant-menu-item) {
-  margin-top: 4px;
-  margin-bottom: 4px;
-  height: 40px;
-  line-height: 40px;
-  border-radius: 8px;
-  margin-left: 8px;
-  margin-right: 8px;
-}
-
-:deep(.ant-menu-item-selected) {
-  background-color: #f0f9ff !important;
-  color: #3b82f6 !important;
-}
-
-:deep(.ant-menu-item-selected::before) {
-  display: none;
-}
-
-:deep(.ant-menu-item:hover),
-:deep(.ant-menu-item-selected) {
-  color: #3b82f6 !important;
-}
-
-.admin-header {
-  background: #fff !important;
+.sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 100vh;
+  width: 260px;
+  flex: 0 0 260px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 24px;
-  border-bottom: 1px solid #f0f0f0;
-  height: 64px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  z-index: 10;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.08), transparent 40%), var(--bg-2);
 }
-
-.header-left {
+.sidebar-brand {
+  padding: 22px 22px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 14px;
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 22px;
 }
-
-.header-right {
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.nav-group-label {
+  padding: 0 12px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+}
+.nav-group-label::before {
+  content: "// ";
+  color: var(--accent);
+}
+.nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.toggle-button {
-  font-size: 18px;
-  color: #1f2937;
-  padding: 4px 8px;
-}
-
-.page-breadcrumb {
-  font-weight: 600;
-  color: #1f2937;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: var(--text-2);
   font-size: 14px;
-  text-transform: capitalize;
+  transition: background 0.2s, color 0.2s;
 }
-
-.user-status {
+.nav-item:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+.nav-item.active {
+  color: var(--text);
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.2), rgba(34, 211, 238, 0.04));
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+.nav-icon {
+  font-size: 16px;
+}
+.nav-item.active .nav-icon {
+  color: var(--accent);
+}
+.sidebar-user {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 12px;
+  gap: 12px;
+  padding: 16px 18px;
+  border-top: 1px solid var(--border);
 }
-
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--grad-primary);
+  color: #fff;
+  font-weight: 600;
+}
+.user-meta {
+  flex: 1;
+  min-width: 0;
+}
 .user-email {
   font-size: 13px;
-  color: #6b7280;
-  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-role {
+  font-size: 12px;
+  color: var(--text-3);
+}
+.user-logout {
+  color: var(--text-2);
+}
+.console-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+.console-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 36px clamp(16px, 3vw, 40px) 64px;
+}
+.mobile-bar {
+  display: none;
+}
+.drawer {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-}
-
-.user-menu-button {
-  padding: 0 !important;
-  min-width: 32px;
-  height: 32px;
-  border-radius: 8px;
-}
-
-.admin-content {
-  background: #f5f5f5;
-  padding: 24px;
-  min-height: calc(100vh - 64px);
-}
-
-@media (max-width: 768px) {
-  .admin-header {
-    padding: 0 16px;
-  }
-  
-  .page-breadcrumb {
+@media (max-width: 1024px) {
+  .sidebar {
     display: none;
+  }
+  .mobile-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(7, 5, 15, 0.8);
+    backdrop-filter: blur(16px);
+  }
+  .console-main {
+    padding-top: 24px;
   }
 }
 </style>
-

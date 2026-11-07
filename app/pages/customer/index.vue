@@ -1,16 +1,26 @@
 <script setup>
 import dayjs from "dayjs";
-import { message } from "ant-design-vue";
+import {
+  ShoppingOutlined,
+  GiftOutlined,
+  ReloadOutlined,
+  CrownOutlined,
+  ArrowRightOutlined,
+} from "@ant-design/icons-vue";
 
 definePageMeta({ layout: "customer" });
 
 const supabase = useSupabase();
+const auth = useAuthStore();
+const { message } = useUi();
 
 const loading = ref(false);
 const me = ref(null); // profile
 const rows = ref([]); // sales list
+const redemptions = ref([]);
+const tab = ref("sales");
 
-const fmt = (d) => (d ? dayjs(d).format("DD/MM/YYYY HH:mm") : "-");
+const fmt = (d) => (d ? dayjs(d).format("D MMM YYYY · HH:mm") : "-");
 
 const load = async () => {
   try {
@@ -22,27 +32,29 @@ const load = async () => {
     const user = u?.user;
     if (!user) return navigateTo("/auth/login");
 
-    // profile (points)
-    const { data: p, error: pErr } = await supabase
-      .from("profiles")
-      .select("id,email,role,points")
-      .eq("id", user.id)
-      .single();
+    const [p, s, r] = await Promise.all([
+      supabase.from("profiles").select("id,email,username,role,points").eq("id", user.id).single(),
+      supabase
+        .from("sales")
+        .select("id, amount, points_earned, note, created_at")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("redemptions")
+        .select("id, reward_title, reward_image_url, points_cost, redeemed_at")
+        .eq("customer_id", user.id)
+        .order("redeemed_at", { ascending: false })
+        .limit(50),
+    ]);
 
-    if (pErr) throw pErr;
-    me.value = p;
+    if (p.error) throw p.error;
+    if (s.error) throw s.error;
 
-    // sales ของตัวเอง
-    const { data: s, error: sErr } = await supabase
-      .from("sales")
-      .select("id, amount, points_earned, note, created_at")
-      .eq("customer_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (sErr) throw sErr;
-    rows.value = s || [];
-    console.log("rows", rows);
+    me.value = p.data;
+    auth.profile = p.data;
+    rows.value = s.data || [];
+    redemptions.value = r.data || [];
   } catch (e) {
     console.error(e);
     message.error(e?.message || "โหลดข้อมูลไม่สำเร็จ");
@@ -53,374 +65,356 @@ const load = async () => {
 
 onMounted(load);
 
-const goPurchase = () => navigateTo("/customer/purchase");
-const gorewards = () => navigateTo("/customer/rewards");
-const logout = async () => {
-  await supabase.auth.signOut();
-  navigateTo("/auth/login");
-};
 const displayName = computed(() => {
-  if (!me.value?.email) return "Member";
+  if (me.value?.username) return me.value.username;
+  if (!me.value?.email) return "สมาชิก";
   return me.value.email.split("@")[0];
 });
+
+const totalSpent = computed(() =>
+  rows.value.reduce((sum, r) => sum + Number(r.amount || 0), 0),
+);
+const totalEarned = computed(() =>
+  rows.value.reduce((sum, r) => sum + Number(r.points_earned || 0), 0),
+);
 </script>
 
 <template>
-  <div class="dashboard-wrap">
-    <div class="glow-bg"></div>
+  <div class="page">
+    <PageHeader
+      eyebrow="Member Overview"
+      :title="`สวัสดี, ${displayName}`"
+      subtitle="ภาพรวมแต้มสะสมและประวัติของคุณ"
+    >
+      <template #actions>
+        <a-button :loading="loading" @click="load">
+          <template #icon><ReloadOutlined /></template> รีเฟรช
+        </a-button>
+      </template>
+    </PageHeader>
 
-    <div class="dashboard-content">
-      <div class="header-banner">
-        <div class="user-info">
-          <a-typography-title :level="2" class="text-gradient">
-            สวัสดี
-            <span class="text-gradient">{{ displayName }}</span>
-          </a-typography-title>
-          <div class="status-badge"><CrownFilled /> Premium Member</div>
+    <div class="overview">
+      <!-- membership card -->
+      <section class="card-col fade-up fade-up-2">
+        <div class="member-card">
+          <div class="mc-top">
+            <span class="mc-brand">R.BENZ<span class="accent-slash">//</span>ID</span>
+            <span class="mc-tier"><CrownOutlined /> MEMBER</span>
+          </div>
+          <div class="mc-label">POINTS_BALANCE · แต้มคงเหลือ</div>
+          <a-skeleton v-if="loading && !me" active :paragraph="false" />
+          <div v-else class="mc-points num">
+            {{ Number(me?.points || 0).toLocaleString() }}
+            <span>แต้ม</span>
+          </div>
+          <div class="mc-bottom">
+            <span class="mc-email">{{ memberLabel(me) }}</span>
+            <span>ฟิล์มม่วง แปดริ้ว</span>
+          </div>
         </div>
 
-        <a-space size="middle" class="header-actions">
-          <a-button @click="load" :loading="loading" class="btn-glass">
-            <template #icon><ReloadOutlined /></template> Refresh
-          </a-button>
-          <a-button type="primary" danger @click="logout" class="btn-logout">
-            <LogoutOutlined /> ออกจากระบบ
-          </a-button>
-        </a-space>
-      </div>
+        <div class="actions">
+          <NuxtLink to="/customer/purchase" class="action surface">
+            <span class="icon-tile"><ShoppingOutlined /></span>
+            <span class="action-text">
+              <strong>บันทึกการซื้อ</strong>
+              <small class="subtle">ทุก 10 บาท รับ 1 แต้ม</small>
+            </span>
+            <ArrowRightOutlined class="subtle" />
+          </NuxtLink>
+          <NuxtLink to="/customer/rewards" class="action surface">
+            <span class="icon-tile"><GiftOutlined /></span>
+            <span class="action-text">
+              <strong>แลกของรางวัล</strong>
+              <small class="subtle">ใช้แต้มแลกสินค้าพรีเมียม</small>
+            </span>
+            <ArrowRightOutlined class="subtle" />
+          </NuxtLink>
+        </div>
+      </section>
 
-      <a-row :gutter="[24, 24]">
-        <a-col :xs="24" :lg="8">
-          <div class="points-card-premium">
-            <div class="card-overlay"></div>
-            <div class="card-content">
-              <span class="label">TOTAL BALANCE</span>
-              <div class="points-display">
-                <span class="points-num">{{
-                  Number(me?.points || 0).toLocaleString()
-                }}</span>
-                <span class="points-unit">PTS</span>
-              </div>
-              <div class="card-footer-info">
-                <span>{{ me?.email }}</span>
-                <div class="chip-icon"><ThunderboltFilled /></div>
-              </div>
+      <!-- history -->
+      <section class="history surface fade-up fade-up-3">
+        <div class="history-stats">
+          <div>
+            <span class="subtle">ยอดซื้อสะสม</span>
+            <strong class="num">฿{{ totalSpent.toLocaleString() }}</strong>
+          </div>
+          <div>
+            <span class="subtle">แต้มที่ได้รับ</span>
+            <strong class="num text-accent">+{{ totalEarned.toLocaleString() }}</strong>
+          </div>
+          <div>
+            <span class="subtle">แลกของรางวัล</span>
+            <strong class="num">{{ redemptions.length.toLocaleString() }} ครั้ง</strong>
+          </div>
+        </div>
+
+        <div class="history-body">
+          <a-segmented
+            v-model:value="tab"
+            :options="[
+              { label: 'ประวัติการซื้อ', value: 'sales' },
+              { label: 'ประวัติการแลก', value: 'redemptions' },
+            ]"
+          />
+
+          <a-spin :spinning="loading">
+            <ul v-if="tab === 'sales' && rows.length" class="tx-list">
+              <li v-for="r in rows" :key="r.id" class="tx">
+                <span class="tx-icon"><ShoppingOutlined /></span>
+                <div class="tx-main">
+                  <div class="tx-title">{{ r.note || "ฟิล์ม / เคส" }}</div>
+                  <div class="tx-sub subtle">{{ fmt(r.created_at) }}</div>
+                </div>
+                <div class="tx-right">
+                  <div class="num">฿{{ Number(r.amount).toLocaleString() }}</div>
+                  <div class="points-plus">+{{ r.points_earned }} แต้ม</div>
+                </div>
+              </li>
+            </ul>
+
+            <ul v-else-if="tab === 'redemptions' && redemptions.length" class="tx-list">
+              <li v-for="r in redemptions" :key="r.id" class="tx">
+                <span class="tx-icon tx-thumb">
+                  <img v-if="r.reward_image_url" :src="r.reward_image_url" alt="" />
+                  <GiftOutlined v-else />
+                </span>
+                <div class="tx-main">
+                  <div class="tx-title">{{ r.reward_title }}</div>
+                  <div class="tx-sub subtle">{{ fmt(r.redeemed_at) }}</div>
+                </div>
+                <div class="tx-right">
+                  <div class="num tx-minus">−{{ Number(r.points_cost).toLocaleString() }} แต้ม</div>
+                </div>
+              </li>
+            </ul>
+
+            <div v-else-if="!loading" class="empty-block">
+              {{ tab === "sales" ? "ยังไม่มีประวัติการซื้อ" : "ยังไม่มีประวัติการแลกของรางวัล" }}
             </div>
-          </div>
-
-          <div class="quick-actions">
-            <a-button
-              type="primary"
-              block
-              size="large"
-              @click="goPurchase"
-              class="btn-action-primary"
-            >
-              <ShoppingCartOutlined /> เพิ่มรายการซื้อฟิล์ม
-            </a-button>
-            <a-button
-              block
-              size="large"
-              @click="gorewards"
-              class="btn-action-primary"
-            >
-              <GiftOutlined /> แลกของรางวัลสุดพิเศษ
-            </a-button>
-          </div>
-        </a-col>
-
-        <a-col :xs="24" :lg="16">
-          <a-card
-            class="table-card"
-            :bordered="false"
-            title="ประวัติการทำรายการล่าสุด"
-          >
-            <template #extra>
-              <span class="text-dim">Latest 10 transactions</span>
-            </template>
-
-            <a-table
-              :dataSource="rows"
-              rowKey="id"
-              :pagination="{ pageSize: 5 }"
-              class="custom-table"
-              :loading="loading"
-            >
-              <a-table-column title="วันที่ทำรายการ" dataIndex="created_at">
-                <template #default="{ text }">
-                  <span class="date-text">{{
-                    dayjs(text).format("DD MMM YYYY")
-                  }}</span>
-                </template>
-              </a-table-column>
-
-              <a-table-column title="รายการสินค้า" dataIndex="note">
-                <template #default="{ text }">
-                  <span class="note-text">{{ text || "ฟิล์ม/เคส" }}</span>
-                </template>
-              </a-table-column>
-
-              <a-table-column title="ยอดชำระ" dataIndex="amount" align="right">
-                <template #default="{ text }">
-                  <span class="amount-text"
-                    >฿{{ Number(text).toLocaleString() }}</span
-                  >
-                </template>
-              </a-table-column>
-
-              <a-table-column
-                title="แต้มที่ได้รับ"
-                dataIndex="points_earned"
-                align="right"
-              >
-                <template #default="{ text }">
-                  <div class="points-earned-tag">+{{ text }}</div>
-                </template>
-              </a-table-column>
-            </a-table>
-
-            <a-empty
-              v-if="!loading && rows.length === 0"
-              description="ไม่พบประวัติการซื้อ"
-            />
-          </a-card>
-        </a-col>
-      </a-row>
+          </a-spin>
+        </div>
+      </section>
     </div>
   </div>
 </template>
+
 <style scoped>
-.dashboard-wrap {
-  min-height: 100vh;
-  background: #080101;
-  padding: 40px 24px;
+.overview {
+  display: grid;
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.card-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.member-card {
   position: relative;
+  aspect-ratio: 1.586;
+  padding: 22px 24px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
   overflow: hidden;
+  background:
+    linear-gradient(rgba(167, 139, 250, 0.08) 1px, transparent 1px) 0 0 / 22px 22px,
+    linear-gradient(90deg, rgba(167, 139, 250, 0.08) 1px, transparent 1px) 0 0 / 22px 22px,
+    radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.22), transparent 45%),
+    linear-gradient(140deg, #2a1259 0%, #160b33 60%, #0c0718 100%);
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.15), 0 0 40px rgba(139, 92, 246, 0.3), 0 30px 70px -30px rgba(0, 0, 0, 0.9);
 }
-
-.glow-bg {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(
-    circle,
-    rgba(114, 46, 209, 0.1) 0%,
-    transparent 70%
-  );
-  z-index: 0;
-}
-
-.dashboard-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 1;
-}
-
-/* Header */
-.header-banner {
+.mc-top {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-}
-
-.welcome-text {
-  color: #fff !important;
-  margin: 0 !important;
-  font-weight: 800 !important;
-}
-
-.text-gradient {
-  background: linear-gradient(90deg, #b37feb, #1890ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.status-badge {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(250, 173, 20, 0.1);
-  color: #faad14;
-  padding: 4px 12px;
-  border-radius: 100px;
-  font-size: 12px;
-  margin-top: 8px;
-  border: 1px solid rgba(250, 173, 20, 0.2);
 }
-
-/* Premium Points Card */
-.points-card-premium {
-  background: linear-gradient(135deg, #722ed1 0%, #1890ff 100%);
-  border-radius: 24px;
-  padding: 32px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  margin-bottom: 24px;
+.mc-brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
-
-.card-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
-  opacity: 0.1;
+.accent-slash {
+  margin: 0 4px;
+  color: var(--accent);
 }
-
-.points-card-premium .label {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
-  letter-spacing: 2px;
+.mc-tier {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--accent);
 }
-
-.points-display {
-  margin: 16px 0;
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+.mc-label {
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--text-3);
 }
-
-.points-num {
+.mc-points {
+  font-family: var(--font-mono);
+  font-size: 38px;
+  font-weight: 600;
+  line-height: 1.15;
   color: #fff;
-  font-size: 48px;
-  font-weight: 900;
-  line-height: 1;
+  text-shadow: 0 0 18px rgba(139, 92, 246, 0.8);
+}
+.mc-points span {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  opacity: 0.75;
+}
+.mc-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+.mc-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.points-unit {
-  color: rgba(255, 255, 255, 0.8);
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  color: var(--text);
+  transition: border-color 0.2s, transform 0.2s;
+}
+.action:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+.action-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.action-text small {
+  font-size: 12px;
+}
+
+.history-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--border);
+}
+.history-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 24px;
+}
+.history-stats > div + div {
+  border-left: 1px solid var(--border);
+}
+.history-stats span {
+  font-size: 13px;
+}
+.history-stats strong {
+  font-size: 22px;
   font-weight: 600;
 }
-
-.card-footer-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 13px;
-  margin-top: 20px;
-}
-
-.chip-icon {
-  font-size: 20px;
-  color: #fff;
-  opacity: 0.8;
-}
-
-/* Actions */
-.quick-actions {
+.history-body {
+  padding: 20px 24px 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.btn-action-primary {
-  height: 56px !important;
-  border-radius: 16px !important;
-  background: #722ed1 !important;
-  border: none !important;
-  font-weight: 700 !important;
-  box-shadow: 0 10px 20px rgba(114, 46, 209, 0.3) !important;
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 520px;
+  overflow-y: auto;
 }
-
-.btn-action-secondary {
-  height: 56px !important;
-  border-radius: 16px !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: #fff !important;
-  font-weight: 700 !important;
+.tx {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
 }
-
-.btn-action-secondary:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: #1890ff !important;
+.tx:last-child {
+  border-bottom: 0;
 }
-
-/* Table Card */
-.table-card {
-  background: rgba(15, 23, 42, 0.6) !important;
-  backdrop-filter: blur(20px);
-  border-radius: 24px !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: #fff !important;
+.tx-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--lavender);
+  overflow: hidden;
 }
-
-:deep(.ant-card-head-title) {
-  color: #fff !important;
-  font-weight: 700;
+.tx-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-
-.text-dim {
-  color: #64748b;
+.tx-main {
+  flex: 1;
+  min-width: 0;
+}
+.tx-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tx-sub {
   font-size: 12px;
 }
-
-/* Table Styling */
-.custom-table :deep(.ant-table) {
-  background: transparent !important;
-  color: #fff;
+.tx-right {
+  text-align: right;
+  font-size: 14px;
 }
-
-.custom-table :deep(.ant-table-thead > tr > th) {
-  background: rgba(255, 255, 255, 0.02) !important;
-  color: #94a3b8 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+.tx-right .points-plus {
+  font-size: 12px;
 }
-
-.custom-table :deep(.ant-table-tbody > tr > td) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-
-.custom-table :deep(.ant-table-tbody > tr:hover > td) {
-  background: rgba(255, 255, 255, 0.02) !important;
-}
-
-.date-text {
-  color: #94a3b8;
-}
-.note-text {
-  color: #e2e8f0;
-  font-weight: 500;
-}
-.amount-text {
-  color: #fff;
+.tx-minus {
+  color: var(--lavender);
   font-weight: 600;
 }
 
-.points-earned-tag {
-  display: inline-block;
-  color: #52c41a;
-  background: rgba(82, 196, 26, 0.1);
-  padding: 2px 10px;
-  border-radius: 6px;
-  font-weight: 700;
-}
-
-.btn-glass {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: #94a3b8 !important;
-}
-
-.btn-logout {
-  border-radius: 10px !important;
-}
-
-@media (max-width: 768px) {
-  .header-banner {
-    flex-direction: column;
-    gap: 20px;
+@media (max-width: 960px) {
+  .overview {
+    grid-template-columns: 1fr;
   }
-  .header-actions {
+  .card-col {
+    max-width: 460px;
     width: 100%;
-    justify-content: space-between;
+  }
+}
+@media (max-width: 560px) {
+  .history-stats > div {
+    padding: 14px;
+  }
+  .history-stats strong {
+    font-size: 17px;
+  }
+  .history-body {
+    padding: 16px 16px 8px;
   }
 }
 </style>
