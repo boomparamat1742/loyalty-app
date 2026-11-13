@@ -28,9 +28,12 @@ watch(
   { immediate: true, deep: true },
 )
 
+// ต้องตรงกับ allowed_mime_types ของ bucket reward-images
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"]
+
 const beforeUpload = (file) => {
-  if (!file?.type?.startsWith("image/")) {
-    message.error("กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น")
+  if (!IMAGE_TYPES.includes(file?.type)) {
+    message.error("รองรับเฉพาะไฟล์ JPG, PNG หรือ WEBP")
     return false
   }
   if (file.size / 1024 / 1024 > 3) {
@@ -95,7 +98,7 @@ const submit = () => {
 
 <template>
   <div class="reward-form">
-    <a-form layout="vertical" requiredMark="optional" class="fields" @finish="submit">
+    <a-form :model="form" layout="vertical" requiredMark="optional" class="fields" @finish="submit">
       <section class="surface surface-pad">
         <h2 class="section-title">ข้อมูลของรางวัล</h2>
 
@@ -138,7 +141,7 @@ const submit = () => {
           v-if="!form.image_url"
           :showUploadList="false"
           :customRequest="customUpload"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp"
           class="dropzone"
         >
           <p class="drop-icon"><CloudUploadOutlined /></p>
@@ -149,7 +152,7 @@ const submit = () => {
         <div v-else class="image-preview">
           <img :src="form.image_url" alt="รูปของรางวัล" />
           <div class="image-actions">
-            <a-upload :showUploadList="false" :customRequest="customUpload" accept="image/*">
+            <a-upload :showUploadList="false" :customRequest="customUpload" accept="image/png,image/jpeg,image/webp">
               <a-button :loading="uploading"><template #icon><SwapOutlined /></template> เปลี่ยนรูป</a-button>
             </a-upload>
             <a-button danger @click="form.image_url = ''"><template #icon><DeleteOutlined /></template> นำออก</a-button>

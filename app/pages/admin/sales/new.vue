@@ -96,7 +96,7 @@ const save = async () => {
 
     <div class="layout">
       <section class="surface surface-pad">
-        <a-form layout="vertical" requiredMark="optional" @finish="save">
+        <a-form :model="form" layout="vertical" requiredMark="optional" @finish="save">
           <a-form-item label="ลูกค้า" required>
             <a-select
               v-model:value="form.customer_id"
